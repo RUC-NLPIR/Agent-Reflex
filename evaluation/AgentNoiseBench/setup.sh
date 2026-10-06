@@ -16,9 +16,7 @@ ln -sfn "$BENCH/../VitaBench/data/vita/domains" "$DATA/vita-data/vita/domains"
 ln -sfn "$DATA/vita-data" "$BENCH/repo/vitabench/data"
 
 uv venv --python 3.12 --seed "$ENV_DIR"
-# Pinned to the versions the forks were developed with; unpinned, the resolver
-# backtracks through hundreds of litellm releases against httpx<0.28.
-uv pip install --python "$ENV_DIR/bin/python" \
-  -e "$BENCH/repo/vitabench" -e "$BENCH/repo/tau2-bench-main" \
-  'httpx==0.27.2' 'litellm==1.72.2' 'openai==1.109.1' json-repair python-dotenv tenacity
+uv pip install --python "$ENV_DIR/bin/python" -r "$BENCH/requirements.txt"
+uv pip install --python "$ENV_DIR/bin/python" --no-deps \
+  -e "$BENCH/repo/vitabench" -e "$BENCH/repo/tau2-bench-main"
 "$ENV_DIR/bin/vita" --help >/dev/null && "$ENV_DIR/bin/tau2" --help >/dev/null && echo "AgentNoiseBench ready"

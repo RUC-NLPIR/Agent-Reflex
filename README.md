@@ -6,7 +6,7 @@
 
 ### Teaching Language Agents to Act Reflectively
 
-[![Paper](https://img.shields.io/badge/Paper-ICLR%202027%20(under%20review)-b31b1b.svg)](#-citation)
+[![Paper](https://img.shields.io/badge/Paper-arXiv-b5212f.svg?logo=arxiv)](https://arxiv.org/abs/XXXX.XXXXX)
 [![Skills](https://img.shields.io/badge/RSD%20Skills-1%2C170-f7be50.svg)](RSD)
 [![Data](https://img.shields.io/badge/Data-ReSFT%20%7C%20ORPO-7b61c4.svg)](#-data)
 [![Model](https://img.shields.io/badge/Backbone-Qwen3--8B-40bac0.svg)](https://huggingface.co/Qwen/Qwen3-8B)
@@ -23,9 +23,33 @@
 * **Reflective RL.** ORPO mixes clean and fault-injected rollouts in one GRPO group and adds a confidence-gated, skill-guided on-policy distillation term. Skills are used only during training; deployment is skill-free.
 * **Strong 8B agent.** On Qwen3-8B, Agent-Reflex reaches **55.8** Overall on five long-horizon tool-use benchmarks (+15.6 over the backbone, +7.4 over EnvScaler-8B) and leads every 8B method on AgentNoiseBench.
 
-## 🧩 Framework
+## 🔧 Dependencies
 
-<p align="center"><img src="assets/motivation.jpg" width="92%"></p>
+Set these up before running anything.
+
+| What | Needed for | Details |
+| --- | --- | --- |
+| NVIDIA GPUs (80 GB) | all | ReSFT 2 × 8 GPUs, ORPO 1 × 8, evaluation 1 × 8. Driver must support CUDA 12.8 (ORPO uses cu128 wheels). |
+| [uv](https://github.com/astral-sh/uv) + git | all | `pip install uv`. Each part's `setup_env.sh` / `setup.sh` builds its own venv and Python (3.10 for ORPO, 3.12 for ReSFT and vLLM) from a pinned `requirements.txt`. |
+| Network access | setup | GitHub, PyPI and Hugging Face. The evaluation setup clones the upstream benchmarks at pinned commits. Export `HTTP_PROXY` / `HTTPS_PROXY` if you are behind a proxy. |
+| [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B) | ReSFT | Base model; pass its local path as `MODEL_PATH`. |
+| Agent-Reflex-data | ReSFT, ORPO | Training data, see [Data](#-data). |
+| **Boyue API key** | evaluation | User simulator (`gpt-4.1`) and judge (`claude-sonnet-4-6`) for every benchmark except BFCL. See below. |
+| **Serper API key** | evaluation | BFCL V4 web-search category only. Register at [serper.dev](https://serper.dev) and copy the API key from the dashboard. |
+
+**Getting the Boyue key.** Boyue is an OpenAI-compatible API gateway. Register at [api.boyuerichdata.opensphereai.com](https://api.boyuerichdata.opensphereai.com) (docs: [boyuerichdata.apifox.cn](https://boyuerichdata.apifox.cn/)), open the **API令牌 (API tokens)** page and create a token in the `auto` group. The key is a string that starts with `sk-`. Paste it into `evaluation/.env`, the only file the evaluation scripts read credentials from:
+
+```bash
+cd evaluation && cp .env.example .env
+# edit evaluation/.env:
+BOYUE_API_KEY=sk-xxxxxxxx
+BOYUE_API_BASE_URL=http://35.220.164.252:3888/v1   # outside CN/HK: https://api.boyuerichdata.opensphereai.com/v1
+SERPER_API_KEY=xxxxxxxx
+```
+
+`.env` is git-ignored. Training needs no API keys.
+
+## 🧩 Framework
 
 Real interaction is not clean: tools time out, permissions fail, and users correct the agent mid-task. Agent-Reflex trains the agent for that regime in three stages.
 
@@ -85,7 +109,7 @@ Each part has its own environment, built with [uv](https://github.com/astral-sh/
 ```bash
 cd LLaMA-Factory && bash setup_env.sh
 NNODES=2 NODE_RANK=<0|1> MASTER_ADDR=<node0> MODEL_PATH=/path/to/Qwen3-8B \
-  bash scripts/run_resft_qwen3_8b.sh          # smoke test: scripts/run_resft_smoke.sh
+  bash scripts/run_resft_qwen3_8b.sh
 ```
 
 **ORPO**
@@ -93,17 +117,16 @@ NNODES=2 NODE_RANK=<0|1> MASTER_ADDR=<node0> MODEL_PATH=/path/to/Qwen3-8B \
 ```bash
 cd ORPO && bash setup_env.sh
 python scripts/prepare_init_checkpoint.py /path/to/checkpoint-5127 --apply
-MODEL_PATH=/path/to/checkpoint-5127 bash scripts/run_orpo_qwen3_8b.sh   # smoke test: scripts/run_orpo_smoke.sh
+MODEL_PATH=/path/to/checkpoint-5127 bash scripts/run_orpo_qwen3_8b.sh
 ```
 
-**Evaluation**
+**Evaluation** (full task sets, official settings; fill in `evaluation/.env` first, see [Dependencies](#-dependencies))
 
 ```bash
 cd evaluation
-cp .env.example .env            # fill in BOYUE_API_KEY (user simulator / judge) and SERPER_API_KEY
-bash shared/setup_vllm.sh && bash Tau2/setup.sh
-MODEL_PATH=/path/to/checkpoint bash shared/serve_vllm.sh
-RUN_NAME=agent-reflex bash Tau2/run.sh      # likewise for the other benchmarks
+bash shared/setup_vllm.sh
+for b in Tau2 BFCL-v4 ACEBench VitaBench AgentNoiseBench ToolSandbox; do bash $b/setup.sh; done
+MODEL_PATH=/path/to/checkpoint RUN_NAME=agent-reflex bash run_all.sh
 ```
 
 ## 📦 Data
@@ -117,7 +140,7 @@ RUN_NAME=agent-reflex bash Tau2/run.sh      # likewise for the other benchmarks
 
 ## 🙏 Acknowledgements
 
-Agent-Reflex builds on [verl](https://github.com/volcengine/verl), [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory), [EnvScaler](https://github.com/RUC-NLPIR/EnvScaler), Agent-World, [tau2-bench](https://github.com/sierra-research/tau2-bench), [BFCL](https://github.com/ShishirPatil/gorilla), [VitaBench](https://github.com/meituan-longcat/vitabench), [ToolSandbox](https://github.com/apple/ToolSandbox) and AgentNoiseBench. Thanks to their authors.
+Agent-Reflex builds on [verl](https://github.com/volcengine/verl), [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory), [EnvScaler](https://github.com/RUC-NLPIR/EnvScaler), [Agent-World](https://github.com/RUC-NLPIR/Agent-World), [tau2-bench](https://github.com/sierra-research/tau2-bench), [BFCL](https://github.com/ShishirPatil/gorilla), [VitaBench](https://github.com/meituan-longcat/vitabench), [ToolSandbox](https://github.com/apple/ToolSandbox) and AgentNoiseBench. Thanks to their authors.
 
 ## 📄 License
 

@@ -1,6 +1,6 @@
 ---
 name: reproduce-resft
-description: Reproduce the Agent-Reflex ReSFT checkpoint (Qwen3-8B full SFT, 5127 steps) with LLaMA-Factory. Use when training, smoke-testing or checking the SFT stage.
+description: Reproduce the Agent-Reflex ReSFT checkpoint (Qwen3-8B full SFT, 5127 steps) with LLaMA-Factory. Use when training or checking the SFT stage.
 ---
 
 # Reproduce ReSFT
@@ -13,13 +13,10 @@ description: Reproduce the Agent-Reflex ReSFT checkpoint (Qwen3-8B full SFT, 512
    local copy.
 2. **Data**: already in `data/agent_reflex_resft/train/` (54,663 rows,
    registered as `agent_reflex_resft` in `data/dataset_info.json`).
-3. **Smoke test** (1 × 8 GPUs, ~15 min including tokenization):
-   `MODEL_PATH=<Qwen3-8B> bash scripts/run_resft_smoke.sh`.
-   Pass criterion: 5 logged steps with a finite, decreasing `loss`.
-4. **Paper run** (2 × 8 GPUs): on each node
+3. **Paper run** (2 × 8 GPUs): on each node
    `NNODES=2 NODE_RANK=<0|1> MASTER_ADDR=<node0> MODEL_PATH=<Qwen3-8B> bash scripts/run_resft_qwen3_8b.sh`.
    It must report `Total optimization steps = 5,127`.
-5. Hand `saves/qwen3-8b-agent-reflex-resft/checkpoint-5127` to ORPO after
+4. Hand `saves/qwen3-8b-agent-reflex-resft/checkpoint-5127` to ORPO after
    `../ORPO/scripts/prepare_init_checkpoint.py --apply`.
 
 ## Pitfalls

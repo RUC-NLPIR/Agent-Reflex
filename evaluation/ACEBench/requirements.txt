@@ -1,0 +1,28 @@
+# Pinned ACEBench / EnvScaler harness environment (Python 3.10).
+# Installed by setup.sh, which also installs the local sources.
+annotated-types==0.8.0
+anyio==4.15.1
+exceptiongroup==1.3.1
+h11==0.16.0
+httpcore2==2.13.0
+httpx2==2.13.0
+idna==3.20
+jiter==0.17.0
+jsonpickle==4.1.3
+markdown-it-py==4.2.0
+mdurl==0.1.2
+openai==3.17.0
+packaging==26.3
+pip==26.2.1
+pydantic==2.13.5
+pydantic-core==2.46.5
+pygments==2.21.0
+python-dotenv==1.2.3
+rich==15.0.0
+setuptools==84.0.0
+sniffio==1.3.1
+tqdm==4.70.1
+truststore==0.10.4
+typing-extensions==4.16.0
+typing-inspection==0.4.4
+wheel==0.48.0

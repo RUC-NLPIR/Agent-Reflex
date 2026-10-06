@@ -22,5 +22,6 @@ mkdir -p "$RUNTIME/tau2-data"
 ln -sfn "$BENCH/data/tau2" "$RUNTIME/tau2-data/tau2"
 
 uv venv --python 3.12 --seed "$ENV_DIR"
-uv pip install --python "$ENV_DIR/bin/python" -e "$SRC"
+uv pip install --python "$ENV_DIR/bin/python" -r "$BENCH/requirements.txt"
+uv pip install --python "$ENV_DIR/bin/python" --no-deps -e "$SRC"
 "$ENV_DIR/bin/python" -c 'import tau2, litellm; print("tau2 ready")'

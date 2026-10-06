@@ -5,7 +5,6 @@
 #
 # Serve with shared/serve_vllm.sh first. Then:
 #   RUN_NAME=agent-reflex bash BFCL-v4/run.sh
-#   BFCL_SUITE=smoke RUN_NAME=smoke bash BFCL-v4/run.sh   # simple_python + multi_turn_base
 set -euo pipefail
 BENCH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$BENCH/../shared/env.sh"

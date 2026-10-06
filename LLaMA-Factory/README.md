@@ -19,8 +19,7 @@ LLaMA-Factory/
 ├── examples/agent_reflex/qwen3_8b_resft_32k.yaml  # the paper recipe
 ├── scripts/
 │   ├── train_resft.sh          # launcher (single- or multi-node, key=value overrides)
-│   ├── run_resft_qwen3_8b.sh   # paper run: 2 nodes x 8 GPUs, 5127 steps
-│   └── run_resft_smoke.sh      # 1 node, 256 samples, 5 steps, no checkpoint
+│   └── run_resft_qwen3_8b.sh   # paper run: 2 nodes x 8 GPUs, 5127 steps
 └── data/
     ├── dataset_info.json       # registers `agent_reflex_resft` (ShareGPT format with tools)
     └── agent_reflex_resft/train/part_*.jsonl   # 54,663 rows, 56 shards, 2.6 GB
@@ -45,9 +44,6 @@ NNODES=2 NODE_RANK=0 MASTER_ADDR=<node0-ip> MODEL_PATH=/path/to/Qwen3-8B \
   bash scripts/run_resft_qwen3_8b.sh
 NNODES=2 NODE_RANK=1 MASTER_ADDR=<node0-ip> MODEL_PATH=/path/to/Qwen3-8B \
   bash scripts/run_resft_qwen3_8b.sh
-
-# Smoke test on one 8-GPU node.
-MODEL_PATH=/path/to/Qwen3-8B bash scripts/run_resft_smoke.sh
 
 # Any YAML key can be overridden on the command line.
 MODEL_PATH=... bash scripts/train_resft.sh learning_rate=5e-6 save_steps=500

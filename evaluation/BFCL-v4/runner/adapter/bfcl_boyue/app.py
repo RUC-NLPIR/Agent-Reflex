@@ -41,7 +41,6 @@ SUITES = {
     "all": ("all_scoring",),
     "non-web": NON_WEB_CATEGORIES,
     "web": WEB_CATEGORIES,
-    "smoke": ("simple_python", "multi_turn_base"),
 }
 
 

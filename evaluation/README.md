@@ -15,15 +15,22 @@ server that hosts the model under test:
 ## 1. Fill in the API key first
 
 Every benchmark except BFCL needs an external LLM (user simulator, judge or
-noise generator). All of them go through one OpenAI-compatible gateway, read
-from **one file**:
+noise generator). All of them go through the **Boyue API**, an
+OpenAI-compatible gateway, with a single key:
+
+1. Register at [api.boyuerichdata.opensphereai.com](https://api.boyuerichdata.opensphereai.com)
+   (docs: [boyuerichdata.apifox.cn](https://boyuerichdata.apifox.cn/)).
+2. On the **API令牌 (API tokens)** page, create a token in the `auto` group.
+   The key is a string like `sk-xxxxxxxx`.
+3. Put it in `evaluation/.env` (git-ignored), the only file the scripts read
+   credentials from:
 
 ```bash
-cp .env.example .env          # evaluation/.env, git-ignored
+cp .env.example .env
 # then edit .env:
-BOYUE_API_KEY=<your key>
-BOYUE_API_BASE_URL=http://35.220.164.252:3888/v1
-SERPER_API_KEY=<serper.dev key>   # BFCL-v4 web-search category only
+BOYUE_API_KEY=sk-xxxxxxxx
+BOYUE_API_BASE_URL=http://35.220.164.252:3888/v1   # outside CN/HK: https://api.boyuerichdata.opensphereai.com/v1
+SERPER_API_KEY=<key from serper.dev>               # BFCL-v4 web-search category only
 ```
 
 To keep the key outside the repository, point `ENV_FILE` at any other file:
@@ -47,6 +54,10 @@ bash VitaBench/setup.sh
 bash AgentNoiseBench/setup.sh
 bash ToolSandbox/setup.sh
 ```
+
+Every environment is pinned: each bench installs its own `<Bench>/requirements.txt`
+(vLLM: `shared/requirements-vllm.txt`), the exact package set used for the
+paper numbers, then adds the bench source with `--no-deps`.
 
 Everything is installed under `evaluation/.runtime/` (venvs, uv-managed
 Python and upstream checkouts at pinned commits) and every result is written
@@ -80,6 +91,14 @@ Keep `MODEL_PATH` exported in the shell that runs the benches.
 
 ## 4. Run
 
+All six benchmarks on their full task sets, serving the model first:
+
+```bash
+MODEL_PATH=/path/to/checkpoint RUN_NAME=my-model bash run_all.sh
+```
+
+Or one at a time against a running server:
+
 ```bash
 RUN_NAME=my-model bash Tau2/run.sh
 RUN_NAME=my-model bash ACEBench/run.sh
@@ -93,17 +112,6 @@ Each run ends with a `summary.json` in `outputs/<bench>/<RUN_NAME>-<tag>/`.
 A run whose score is exactly zero is reported as `FAIL`: on these benches
 that means the harness, not the model, is broken (wrong endpoint, empty
 responses, judge unreachable).
-
-Quick check with 5 tasks per bench:
-
-```bash
-TAU2_NUM_TASKS=5                  RUN_NAME=smoke bash Tau2/run.sh
-ACE_NUM_STEP=5 ACE_NUM_TURN=5     RUN_NAME=smoke bash ACEBench/run.sh
-VITA_DOMAINS=delivery NUM_TASKS=5 RUN_NAME=smoke bash VitaBench/run.sh
-MODE=smoke NUM_TASKS=5            RUN_NAME=smoke bash AgentNoiseBench/run.sh
-TOOLSANDBOX_N=5                   RUN_NAME=smoke bash ToolSandbox/run.sh
-BFCL_SUITE=smoke                  RUN_NAME=smoke bash BFCL-v4/run.sh   # simple_python + multi_turn_base
-```
 
 ## Protocol
 

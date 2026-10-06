@@ -14,7 +14,7 @@ description: Run VitaBench (delivery, instore, ota, cross-domain; 100 tasks each
 - **Models**: `models.yaml` (no credentials; base URL and key are injected
   from `BOYUE_*`).
 - **Run**: `RUN_NAME=<name> bash VitaBench/run.sh`.
-  Smoke: `VITA_DOMAINS=delivery NUM_TASKS=5`. Domains are `+`-separated
+  One domain: `VITA_DOMAINS=delivery`. Domains are `+`-separated
   because the cross domain is itself `delivery,instore,ota`.
 - **Protocol**: Chinese tasks, agent temperature 0.0, thinking on, user
   `gpt-4.1`, judge `claude-sonnet-4-6`, 300 max steps, 1 trial.

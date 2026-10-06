@@ -16,6 +16,6 @@ git -C "$SRC" checkout -q --force "$COMMIT"
 git -C "$SRC" apply "$BENCH/toolsandbox_agent_reflex.patch"
 
 uv venv --python 3.12 --seed "$ENV_DIR"
-# Upstream pins openai==1.17.0, which passes `proxies=` that httpx 0.28 removed.
-uv pip install --python "$ENV_DIR/bin/python" -e "$SRC" 'httpx==0.27.2'
+uv pip install --python "$ENV_DIR/bin/python" -r "$BENCH/requirements.txt"
+uv pip install --python "$ENV_DIR/bin/python" --no-deps -e "$SRC"
 "$ENV_DIR/bin/tool_sandbox" --help >/dev/null && echo "ToolSandbox ready"

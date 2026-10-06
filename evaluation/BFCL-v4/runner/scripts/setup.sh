@@ -74,9 +74,9 @@ if test "$NEED_VENV" = 1; then
   fi
 fi
 
-pip_install "$BFCL_SRC"
-pip_install -e "$ROOT"
-pip_install 'soundfile==0.13.1'
+pip_install -r "$ROOT/../requirements.txt"
+pip_install --no-deps "$BFCL_SRC"
+pip_install --no-deps -e "$ROOT"
 
 HF_HOME="$ROOT/cache/huggingface" \
   "$ROOT/.venv/bin/python" -c \

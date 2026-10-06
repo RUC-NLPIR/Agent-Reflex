@@ -12,8 +12,7 @@ description: Run AgentNoiseBench (tool and user noise on τ²-bench and VitaBenc
   built against); VitaBench reuses `../VitaBench/data`.
 - **Setup**: `bash AgentNoiseBench/setup.sh`.
 - **Run**: `RUN_NAME=<name> bash AgentNoiseBench/run.sh`
-  (`MODE=tau2|vita|smoke`; smoke = 4 cells: Tau2 airline clean, tool `fault`, user `ambiguity`, and
-  Vita delivery clean, each on `NUM_TASKS` tasks, default 2).
+  (`MODE=all|tau2|vita`, default `all`).
 - **Matrix** (not a cartesian product): per domain, one clean cell
   (tool `others`, user `original`), five tool-noise cells
   (fault, incomplete, induce, redundant, wrong; user `original`) and the

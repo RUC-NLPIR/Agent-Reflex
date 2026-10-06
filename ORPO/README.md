@@ -37,7 +37,6 @@ ORPO/
 ├── scripts/
 │   ├── train_orpo.sh             # full launcher; every knob is an env var
 │   ├── run_orpo_qwen3_8b.sh      # paper setting (200 updates, 1x8 GPUs)
-│   ├── run_orpo_smoke.sh         # 2 updates, no validation / checkpoint
 │   ├── preflight.py              # checks model, data and prompt lengths before launch
 │   └── prepare_init_checkpoint.py# makes a transformers-5 ReSFT checkpoint loadable here
 ├── recipe/envscaler_openai_fc/
@@ -72,8 +71,9 @@ bash setup_env.sh              # creates .venv (override with ENV_DIR=...)
 source .venv/bin/activate
 ```
 
-`setup_env.sh` installs torch 2.7.1 (cu128), SGLang, flash-attn and this
-package in editable mode. On a machine without GPUs the final import check
+`setup_env.sh` installs torch 2.7.1 (cu128), the pinned `requirements.txt`
+(SGLang 0.4.10.post2, transformers 4.54.1, ray 2.57.0, ...), flash-attn 2.8.3
+and this package in editable mode. On a machine without GPUs the final import check
 only reports versions, so the environment can be built on a CPU login node.
 Behind a proxy, export `HTTP_PROXY` / `HTTPS_PROXY` first. If your pip mirror
 does not carry the CUDA wheels, `setup_env.sh` also reads `TORCH_INDEX_URL`.
@@ -100,9 +100,6 @@ unconverted checkpoint.
 ```bash
 # Paper setting: Qwen3-8B ReSFT checkpoint, one node with 8 GPUs, 200 updates.
 MODEL_PATH=/path/to/resft/checkpoint-5127 bash scripts/run_orpo_qwen3_8b.sh
-
-# Smoke test: 2 updates, about 30 minutes on 8 GPUs.
-MODEL_PATH=/path/to/Qwen3-8B bash scripts/run_orpo_smoke.sh
 
 # Resume an interrupted run.
 MODEL_PATH=... bash scripts/run_orpo_qwen3_8b.sh trainer.resume_mode=auto

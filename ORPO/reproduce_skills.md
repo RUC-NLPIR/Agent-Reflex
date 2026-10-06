@@ -1,6 +1,6 @@
 ---
 name: reproduce-orpo
-description: Reproduce Agent-Reflex ORPO (noisy agentic RL + reflection OPD) on Qwen3-8B with verl. Use when training, smoke-testing or debugging the ORPO stage.
+description: Reproduce Agent-Reflex ORPO (noisy agentic RL + reflection OPD) on Qwen3-8B with verl. Use when training or debugging the ORPO stage.
 ---
 
 # Reproduce ORPO
@@ -12,14 +12,10 @@ description: Reproduce Agent-Reflex ORPO (noisy agentic RL + reflection OPD) on 
    flash-attn. Behind a proxy export `HTTP_PROXY`/`HTTPS_PROXY` first.
 2. **Initial checkpoint**: ReSFT `checkpoint-5127` from `../LLaMA-Factory`.
    Run `python scripts/prepare_init_checkpoint.py <ckpt> --apply` once.
-3. **Smoke test** (1 node × 8 GPUs, ~30 min):
-   `MODEL_PATH=<ckpt> bash scripts/run_orpo_smoke.sh`.
-   Pass criterion: two `step:` lines with finite `actor/pg_loss`,
-   `actor/opd_loss` and `critic/score/mean`.
-4. **Paper run**: `MODEL_PATH=<ckpt> bash scripts/run_orpo_qwen3_8b.sh`
+3. **Paper run**: `MODEL_PATH=<ckpt> bash scripts/run_orpo_qwen3_8b.sh`
    (200 updates, batch 64 × 8 rollouts, ν = 0.25, noise rate 0.2,
    λ_opd = 0.01, β_opd = 5.0, lr 1e-6, KL 0.01).
-5. **Export**: `python -m verl.model_merger merge --backend fsdp --local_dir <ckpt>/global_step_N/actor --target_dir <hf_dir>`,
+4. **Export**: `python -m verl.model_merger merge --backend fsdp --local_dir <ckpt>/global_step_N/actor --target_dir <hf_dir>`,
    then evaluate with `../evaluation`.
 
 ## Pitfalls

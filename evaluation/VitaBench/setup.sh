@@ -21,5 +21,6 @@ rm -rf "$SRC/data/vita/domains"
 ln -s "$BENCH/data/vita/domains" "$SRC/data/vita/domains"
 
 uv venv --python 3.12 --seed "$ENV_DIR"
-uv pip install --python "$ENV_DIR/bin/python" -e "$SRC"
+uv pip install --python "$ENV_DIR/bin/python" -r "$BENCH/requirements.txt"
+uv pip install --python "$ENV_DIR/bin/python" --no-deps -e "$SRC"
 "$ENV_DIR/bin/vita" --help >/dev/null && echo "VitaBench ready"

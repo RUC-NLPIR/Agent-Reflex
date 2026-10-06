@@ -8,8 +8,7 @@ description: Run τ²-bench (airline 50, retail 114, telecom 114) for an Agent-R
 - **Setup**: `bash Tau2/setup.sh` clones tau2-bench at `672227c`, applies
   `tau2_agent_reflex.patch` (judge models and HTTP pool size configurable
   from the environment) and links the shipped `data/tau2` as the data dir.
-- **Run**: `RUN_NAME=<name> bash Tau2/run.sh`. Smoke: `TAU2_NUM_TASKS=5`.
-  One domain: `TAU2_DOMAINS=retail`.
+- **Run**: `RUN_NAME=<name> bash Tau2/run.sh`.  One domain: `TAU2_DOMAINS=retail`.
 - **Protocol**: base split, 1 trial, seed 300, agent temperature 0.0, user
   `gpt-4.1` at temperature 0.0, NL-assertion judge `gpt-4.1`, 120 concurrent
   tasks.

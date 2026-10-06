@@ -7,5 +7,5 @@ source "$BENCH/../shared/env.sh"
 
 ENV_DIR="$RUNTIME/envscaler-env"
 uv venv --python 3.10 --seed "$ENV_DIR"
-uv pip install --python "$ENV_DIR/bin/python" openai pydantic python-dotenv tqdm rich jsonpickle
+uv pip install --python "$ENV_DIR/bin/python" -r "$BENCH/requirements.txt"
 "$ENV_DIR/bin/python" -c 'import openai, pydantic, dotenv; print("ACEBench env ready")'

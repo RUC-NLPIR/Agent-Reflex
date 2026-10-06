@@ -7,8 +7,9 @@ description: Evaluate an Agent-Reflex checkpoint on Tau2, BFCL-v4, ACEBench, Vit
 
 ## Steps
 
-1. **Key**: `cp .env.example .env`, fill `BOYUE_API_KEY` (and `SERPER_API_KEY`
-   for BFCL). Or keep it elsewhere and export `ENV_FILE=/path/to/file`.
+1. **Key**: register at https://api.boyuerichdata.opensphereai.com, create an
+   `sk-…` token (group `auto`) on the API令牌 page, then `cp .env.example .env`
+   and fill `BOYUE_API_KEY` (and `SERPER_API_KEY` from serper.dev for BFCL). Or keep it elsewhere and export `ENV_FILE=/path/to/file`.
    Never print or commit this file.
 2. **Environments**: run `shared/setup_vllm.sh` and every `<Bench>/setup.sh`
    once. They need GitHub and PyPI access (export a proxy if needed).
@@ -16,8 +17,9 @@ description: Evaluate an Agent-Reflex checkpoint on Tau2, BFCL-v4, ACEBench, Vit
    `MODEL_PATH=<hf_dir> bash shared/serve_vllm.sh` (40,960 context for every
    bench). Keep `MODEL_PATH` exported: each
    bench refuses to run if `/v1/models` reports a different root.
-4. **Smoke check** (5 tasks each, see `README.md`), then the full runs with
-   `RUN_NAME=<name> bash <Bench>/run.sh`.
+4. **Run** the full benchmarks:
+   `MODEL_PATH=<hf_dir> RUN_NAME=<name> bash run_all.sh` (serves the model,
+   then every bench), or one at a time with `RUN_NAME=<name> bash <Bench>/run.sh`.
 5. Read `outputs/<bench>/<RUN_NAME>-<tag>/summary.json`. `status: FAIL` with
    a zero score means the harness is broken; fix it before trusting numbers.
 
