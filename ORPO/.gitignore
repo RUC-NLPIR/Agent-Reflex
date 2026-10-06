@@ -1,0 +1,7 @@
+.env
+.venv/
+checkpoints/
+outputs/
+wandb/
+__pycache__/
+*.egg-info/

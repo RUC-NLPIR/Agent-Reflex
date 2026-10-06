@@ -1,0 +1,260 @@
+# LLM Model Configuration
+# This file defines the available language models and their configurations
+
+# Available models
+# default:
+#   base_url: <base url>
+#   temperature: 0.0
+#   max_input_tokens: 32768
+#   headers:
+#     Authorization: "Bearer <api key>"
+#     Content-Type: "application/json"
+
+# models:
+#   - name: gpt-4.1
+#     max_tokens: 8192
+#     max_input_tokens: 32768
+#     cost_1m_token_dollar:
+#       prompt_price: 2.00
+#       completion_price: 8.00
+#     headers:
+#       Authorization: "Bearer <api key>"
+#       Content-Type: "application/json"
+#   - name: gpt-4o
+#     max_tokens: 8192
+#     max_input_tokens: 32768
+#     headers:
+#       Authorization: "Bearer <api key>"
+#       Content-Type: "application/json"
+#   - name: gpt-5
+#     max_tokens: 128000
+#     max_input_tokens: 200000
+#     reasoning_effort: high
+#     headers:
+#       Authorization: "Bearer <api key>"
+#       Content-Type: "application/json"
+#   - name: deepseek-v3-0324
+#     max_completion_tokens: 16384
+#     max_input_tokens: 200000
+#   - name: qwen3-max
+#     max_tokens: 128000
+#     max_input_tokens: 200000
+#     headers:
+#       Authorization: "Bearer <api key>"
+#       Content-Type: "application/json" 
+default:
+  base_url: <base url>
+  temperature: 0.0
+  max_input_tokens: 32768
+  headers:
+    Authorization: "Bearer <api key>"
+    Content-Type: "application/json"
+# non-think & think
+models:
+  - name: gpt-4.1
+    max_tokens: 8192
+    max_input_tokens: 32768
+    cost_1m_token_dollar:
+      prompt_price: 2.00
+      completion_price: 8.00
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: claude-3-7-sonnet-20250219
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: deepseek-v3-0324
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: doubao-seed-1.6
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: qwen3-235b-a22b-instruct-2507
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: kimi-k2-0905
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: deepseek-v3.1
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: deepseek-v3.2-exp
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: qwen3-max
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: longcat-flash-chat
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: gemini-2.5-pro
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  
+  - name: deepseek-r1-0528
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  
+  - name: qwen3-235b-a22b-thinking-2507
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  
+  - name: o4-mini
+    max_tokens: 8192
+    max_input_tokens: 32768
+    reasoning_effort: "high"
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+      
+  - name: o3
+    max_tokens: 8192
+    max_input_tokens: 32768
+    reasoning_effort: "high"
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+
+  - name: longcat-flash-thinking
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+
+
+
+
+# think-model & non-think-model
+  - name: qwen3-32b
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: gemini-2.5-flash
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: glm-4.5
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: claude-4-sonnet
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: claude-4.1-opus
+    max_tokens: 8192
+    max_input_tokens: 32768
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: gpt-5
+    max_tokens: 8192
+    max_input_tokens: 32768
+    reasoning_effort: "high"
+    thinking: 
+      type: "enabled"
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  - name: grok-4
+    max_tokens: 8192
+    max_input_tokens: 32768
+    thinking: 
+      type: "enabled"
+    headers:
+      Authorization: "Bearer <api key>"
+      Content-Type: "application/json"
+  # - name: qwen3-32b
+  #   max_tokens: 8192
+  #   max_input_tokens: 32768
+  #   thinking: 
+  #     type: "enabled"
+  #   headers:
+  #     Authorization: "Bearer <api key>"
+  #     Content-Type: "application/json"
+  # - name: gemini-2.5-flash
+  #   max_tokens: 8192
+  #   max_input_tokens: 32768
+  #   thinking: 
+  #     type: "enabled"
+  #   headers:
+  #     Authorization: "Bearer <api key>"
+  #     Content-Type: "application/json"
+  # - name: glm-4.5
+  #   max_tokens: 8192
+  #   max_input_tokens: 32768
+  #   thinking: 
+  #     type: "enabled"
+  #   headers:
+  #     Authorization: "Bearer <api key>"
+  #     Content-Type: "application/json"
+  # - name: claude-4-sonnet
+  #   max_tokens: 8192
+  #   max_input_tokens: 32768
+  #   thinking: 
+  #     type: "enabled"
+  #   headers:
+  #     Authorization: "Bearer <api key>"
+  #     Content-Type: "application/json"
+  # - name: claude-4.1-opus
+  #   max_tokens: 8192
+  #   max_input_tokens: 32768
+  #   thinking: 
+  #     type: "enabled"
+  #   headers:
+  #     Authorization: "Bearer <api key>"
+  #     Content-Type: "application/json"
+  # - name: gpt-5
+  #   max_tokens: 8192
+  #   max_input_tokens: 32768
+  #   reasoning_effort: "high"
+  #   thinking: 
+  #     type: "enabled"
+  #   headers:
+  #     Authorization: "Bearer <api key>"
+  #     Content-Type: "application/json"

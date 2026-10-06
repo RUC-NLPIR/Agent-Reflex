@@ -1,0 +1,23 @@
+delivery_tool = ["get_user_historical_behaviors",
+    "get_user_all_orders",
+    "get_nearby",   
+    "get_delivery_store_info",
+    "get_delivery_product_info", 
+    "pay_delivery_order",
+    "create_delivery_order",
+    "get_delivery_order_status",
+    "cancel_delivery_order",
+    "modify_delivery_order",
+    "search_delivery_orders",
+    "get_delivery_order_detail",
+    "address_to_longitude_latitude",
+    "longitude_latitude_to_distance",
+    "weather",
+    "get_date_holiday_info",
+    "get_holiday_date",
+    "delivery_distance_to_time", # 秒，年
+    "delivery_store_search_recommand",
+    "delivery_product_search_recommand",
+]
+instore_tool = []
+ota_tool = []

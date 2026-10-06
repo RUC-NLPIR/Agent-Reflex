@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bfcl-boyue-runner"
+version = "0.1.0"
+description = "Minimal BFCL V4 trace runner for OpenAI-compatible gateways"
+requires-python = ">=3.10"
+
+[project.scripts]
+bfcl-boyue = "bfcl_boyue.app:main"
+
+[tool.setuptools]
+package-dir = {"" = "adapter"}
+
+[tool.setuptools.packages.find]
+where = ["adapter"]
+include = ["bfcl_boyue*"]

@@ -1,0 +1,479 @@
+diff --git a/tool_sandbox/cli/__init__.py b/tool_sandbox/cli/__init__.py
+index c38ff70..5cff1a8 100644
+--- a/tool_sandbox/cli/__init__.py
++++ b/tool_sandbox/cli/__init__.py
+@@ -8,6 +8,7 @@ import json
+ import multiprocessing
+ import random
+ import subprocess
++import traceback
+ from collections import Counter
+ from functools import partial
+ from pathlib import Path
+@@ -163,7 +164,11 @@ def run_sandbox(
+         # for starting a new process eliminated the deadlock.
+         mpctx = multiprocessing.get_context("spawn")
+         with mpctx.Pool(min(processes, num_scenarios)) as pool:
+-            result_summary = pool.map(
++            # `imap_unordered` instead of `map`: results arrive as they finish, so
++            # progress is observable and a crashed worker cannot discard the
++            # scenarios that already succeeded.
++            result_summary = []
++            iterator = pool.imap_unordered(
+                 partial(
+                     run_scenario,
+                     agent_type=agent_type,
+@@ -172,6 +177,35 @@ def run_sandbox(
+                 ),
+                 name_and_scenario_list,
+             )
++            try:
++                for result in tqdm(
++                    iterator, total=num_scenarios, desc="Scenarios"
++                ):
++                    result_summary.append(result)
++            except Exception:
++                traceback.print_exc()
++                pool.terminate()
++        # A worker that dies takes its scenario's result with it. Score those as
++        # zero rather than dropping them, so the summary still covers every
++        # requested scenario and the run stays comparable.
++        played = {result["name"] for result in result_summary}
++        for name, scenario in name_and_scenario_list:
++            if name in played:
++                continue
++            result_summary.append(
++                {
++                    "name": name,
++                    "categories": scenario.categories,
++                    "traceback": f"WorkerLost: no result returned for {name}",
++                    "exception_type": "WorkerLost",
++                    "milestone_similarity": 0,
++                    "minefield_similarity": 0,
++                    "similarity": 0,
++                    "turn_count": scenario.max_messages,
++                    "milestone_mapping": {},
++                    "minefield_mapping": {},
++                }
++            )
+     else:
+         result_summary = []
+         tqdm_iterator = tqdm(name_and_scenario_list, desc="Scenarios")
+diff --git a/tool_sandbox/cli/utils.py b/tool_sandbox/cli/utils.py
+index 7273406..0157f25 100644
+--- a/tool_sandbox/cli/utils.py
++++ b/tool_sandbox/cli/utils.py
+@@ -1,5 +1,7 @@
+ # For licensing see accompanying LICENSE file.
+ # Copyright (C) 2024 Apple Inc. All Rights Reserved.
++import os
++import signal
+ import traceback
+ from collections import Counter, defaultdict
+ from enum import auto
+@@ -29,13 +31,16 @@ from tool_sandbox.roles.gorilla_api_agent import GorillaAPIAgent
+ from tool_sandbox.roles.hermes_api_agent import HermesAPIAgent
+ from tool_sandbox.roles.mistral_api_agent import MistralOpenAIServerAgent
+ from tool_sandbox.roles.openai_api_agent import (
++    EnvScaler_8B_Agent,
+     GPT_3_5_0125_Agent,
+     GPT_4_0125_Agent,
+     GPT_4_o_2024_05_13_Agent,
++    Qwen3_8B_Agent,
+ )
+ from tool_sandbox.roles.openai_api_user import (
+     GPT_3_5_0125_User,
+     GPT_4_0125_User,
++    GPT_4_1_User,
+     GPT_4_o_2024_05_13_User,
+ )
+ from tool_sandbox.roles.unhelpful_agent import UnhelpfulAgent
+@@ -48,6 +53,9 @@ class RoleImplType(StrEnum):
+     GPT_3_5_0125 = auto()
+     GPT_4_0125 = auto()
+     GPT_4_o_2024_05_13 = auto()
++    GPT_4_1 = auto()
++    Qwen3_8B = auto()
++    EnvScaler_8B = auto()
+     Claude_3_Opus = auto()
+     Claude_3_Sonnet = auto()
+     Claude_3_Haiku = auto()
+@@ -75,6 +83,8 @@ AGENT_TYPE_TO_FACTORY: dict[RoleImplType, Callable[..., BaseRole]] = {
+     RoleImplType.GPT_3_5_0125: GPT_3_5_0125_Agent,
+     RoleImplType.GPT_4_0125: GPT_4_0125_Agent,
+     RoleImplType.GPT_4_o_2024_05_13: GPT_4_o_2024_05_13_Agent,
++    RoleImplType.Qwen3_8B: Qwen3_8B_Agent,
++    RoleImplType.EnvScaler_8B: EnvScaler_8B_Agent,
+     RoleImplType.Claude_3_Opus: ClaudeOpusAgent,
+     RoleImplType.Claude_3_Sonnet: ClaudeSonnetAgent,
+     RoleImplType.Claude_3_Haiku: ClaudeHaikuAgent,
+@@ -97,6 +107,7 @@ USER_TYPE_TO_FACTORY: dict[RoleImplType, Callable[..., BaseRole]] = {
+     RoleImplType.GPT_3_5_0125: GPT_3_5_0125_User,
+     RoleImplType.GPT_4_0125: GPT_4_0125_User,
+     RoleImplType.GPT_4_o_2024_05_13: GPT_4_o_2024_05_13_User,
++    RoleImplType.GPT_4_1: GPT_4_1_User,
+     RoleImplType.Cli: CliUser,
+ }
+ 
+@@ -168,37 +179,15 @@ def run_scenario(
+         Evaluation info
+     """
+     name, scenario = name_and_scenario
+-    roles = {
+-        RoleType.USER: USER_TYPE_TO_FACTORY[user_type](),
+-        RoleType.EXECUTION_ENVIRONMENT: ExecutionEnvironment(),
+-        RoleType.AGENT: AGENT_TYPE_TO_FACTORY[agent_type](),
+-    }
+     output_directory.mkdir(parents=True, exist_ok=True)
++    task_timeout = float(os.environ.get("EVAL_TASK_TIMEOUT", "0"))  # 0 = no limit
+ 
+-    try:
+-        result = scenario.play_and_evaluate(
+-            roles=roles,
+-            output_directory=output_directory,
+-            scenario_name=name,
+-        )
+-        return {
+-            "name": name,
+-            "categories": scenario.categories,
+-            "traceback": None,
+-            "exception_type": None,
+-            "milestone_similarity": result.evaluation_result.milestone_similarity,
+-            "minefield_similarity": result.evaluation_result.minefield_similarity,
+-            "similarity": result.evaluation_result.similarity,
+-            "turn_count": result.evaluation_result.turn_count,
+-            "milestone_mapping": result.evaluation_result.milestone_mapping,
+-            "minefield_mapping": result.evaluation_result.minefield_mapping,
+-        }
+-    except Exception as e:
++    def timeout_result() -> dict[str, Any]:
+         return {
+             "name": name,
+             "categories": scenario.categories,
+-            "traceback": traceback.format_exc(),
+-            "exception_type": type(e).__name__,
++            "traceback": f"TimeoutError: scenario {name} exceeded {task_timeout:.0f}s",
++            "exception_type": "TimeoutError",
+             "milestone_similarity": 0,
+             "minefield_similarity": 0,
+             "similarity": 0,
+@@ -206,9 +195,74 @@ def run_scenario(
+             "milestone_mapping": {},
+             "minefield_mapping": {},
+         }
++
++    def play() -> dict[str, Any]:
++        roles = {
++            RoleType.USER: USER_TYPE_TO_FACTORY[user_type](),
++            RoleType.EXECUTION_ENVIRONMENT: ExecutionEnvironment(),
++            RoleType.AGENT: AGENT_TYPE_TO_FACTORY[agent_type](),
++        }
++        try:
++            result = scenario.play_and_evaluate(
++                roles=roles,
++                output_directory=output_directory,
++                scenario_name=name,
++            )
++            return {
++                "name": name,
++                "categories": scenario.categories,
++                "traceback": None,
++                "exception_type": None,
++                "milestone_similarity": result.evaluation_result.milestone_similarity,
++                "minefield_similarity": result.evaluation_result.minefield_similarity,
++                "similarity": result.evaluation_result.similarity,
++                "turn_count": result.evaluation_result.turn_count,
++                "milestone_mapping": result.evaluation_result.milestone_mapping,
++                "minefield_mapping": result.evaluation_result.minefield_mapping,
++            }
++        except Exception as e:
++            return {
++                "name": name,
++                "categories": scenario.categories,
++                "traceback": traceback.format_exc(),
++                "exception_type": type(e).__name__,
++                "milestone_similarity": 0,
++                "minefield_similarity": 0,
++                "similarity": 0,
++                "turn_count": scenario.max_messages,
++                "milestone_mapping": {},
++                "minefield_mapping": {},
++            }
++        finally:
++            for role in roles.values():
++                role.teardown()
++
++    if task_timeout <= 0:
++        return play()
++
++    # Pool workers are daemonic, so multiprocessing.Process children are forbidden.
++    # Each worker is already its own process, so SIGALRM can bound the scenario.
++    #
++    # This must not derive from Exception. The agent and user roles wrap their
++    # inference in tenacity retries and broad `except Exception` handlers, so a
++    # TimeoutError subclass was caught there and the hung request was simply
++    # retried, leaving the scenario running long past task_timeout.
++    class TaskTimeout(BaseException):
++        pass
++
++    def _alarm(_signum, _frame):
++        raise TaskTimeout(f"scenario {name} exceeded {task_timeout:.0f}s")
++
++    try:
++        signal.signal(signal.SIGALRM, _alarm)
++        # Repeat the signal: teardown and the socket close path can block, and a
++        # one-shot alarm has already been consumed by then.
++        signal.setitimer(signal.ITIMER_REAL, max(1.0, task_timeout), 30.0)
++        return play()
++    except TaskTimeout:
++        return timeout_result()
+     finally:
+-        for role in roles.values():
+-            role.teardown()
++        signal.setitimer(signal.ITIMER_REAL, 0)
+ 
+ 
+ def get_category_summary(
+diff --git a/tool_sandbox/common/message_conversion.py b/tool_sandbox/common/message_conversion.py
+index 6b84311..941ab43 100644
+--- a/tool_sandbox/common/message_conversion.py
++++ b/tool_sandbox/common/message_conversion.py
+@@ -2,6 +2,7 @@
+ # Copyright (C) 2024 Apple Inc. All Rights Reserved.
+ import ast
+ import json
++import keyword
+ import re
+ from collections import defaultdict
+ from typing import Any, Literal, Optional, cast
+@@ -72,6 +73,8 @@ def openai_tool_call_to_python_code(
+         KeyError:   If the tool name is not a known tool
+     """
+     tool_id = tool_call.id
++    if not tool_id.isidentifier() or keyword.iskeyword(tool_id):
++        tool_id = f"tool_call_{re.sub(r'[^0-9A-Za-z_]', '_', tool_id)}"
+     agent_facing_tool_name = tool_call.function.name
+ 
+     # Check if function name is known allowed tool
+@@ -84,8 +87,15 @@ def openai_tool_call_to_python_code(
+         if execution_facing_tool_name is None
+         else execution_facing_tool_name
+     )
++    raw_arguments = tool_call.function.arguments or "{}"
++    try:
++        parsed_arguments = json.loads(raw_arguments)
++    except json.JSONDecodeError:
++        parsed_arguments = {}
++    if not isinstance(parsed_arguments, dict):
++        parsed_arguments = {}
+     function_call_code = (
+-        f"{tool_id}_parameters = {json.loads(tool_call.function.arguments)}\n"
++        f"{tool_id}_parameters = {parsed_arguments}\n"
+         f"{tool_id}_response = {function_name}(**{tool_id}_parameters)\n"
+         f"print(repr({tool_id}_response))"
+     )
+@@ -95,6 +105,7 @@ def openai_tool_call_to_python_code(
+ def python_code_to_openai_tool_call(
+     python_code: str,
+     agent_facing_tool_name: Optional[str],
++    tool_call_id: Optional[str] = None,
+ ) -> ChatCompletionMessageToolCall:
+     """Converts python code to OpenAI ChatCompletionMessageToolCall.
+ 
+@@ -108,6 +119,8 @@ def python_code_to_openai_tool_call(
+                                 executing the code we need to use the actual tool
+                                 name. If `None` the tool name stored in python
+                                 will be used.
++        tool_call_id:           The original API tool call ID. This can differ from
++                                the Python-safe identifier embedded in `python_code`.
+ 
+     Returns:
+         ChatCompletionMessageToolCall object
+@@ -125,7 +138,7 @@ def python_code_to_openai_tool_call(
+         else agent_facing_tool_name
+     )
+     return ChatCompletionMessageToolCall(
+-        id=match.group("tool_id"),
++        id=tool_call_id or match.group("tool_id"),
+         type="function",
+         function=Function(
+             name=function_name,
+@@ -201,7 +214,9 @@ def to_openai_messages(
+             # Add tool call
+             openai_messages[-1]["tool_calls"].append(
+                 python_code_to_openai_tool_call(
+-                    message.content, message.openai_function_name
++                    message.content,
++                    message.openai_function_name,
++                    tool_call_id=message.openai_tool_call_id,
+                 ).model_dump(mode="dict", exclude_unset=True)
+             )
+         elif message.sender == RoleType.AGENT and message.recipient == RoleType.USER:
+diff --git a/tool_sandbox/roles/openai_api_agent.py b/tool_sandbox/roles/openai_api_agent.py
+index 1d1e8d0..3ca647e 100644
+--- a/tool_sandbox/roles/openai_api_agent.py
++++ b/tool_sandbox/roles/openai_api_agent.py
+@@ -2,6 +2,10 @@
+ # Copyright (C) 2024 Apple Inc. All Rights Reserved.
+ """Agent role for any model that conforms to OpenAI tool use API"""
+ 
++import json
++import os
++import re
++from types import SimpleNamespace
+ from typing import Any, Iterable, List, Literal, Optional, Union, cast
+ 
+ from openai import NOT_GIVEN, NotGiven, OpenAI
+@@ -29,6 +33,33 @@ from tool_sandbox.common.utils import all_logging_disabled
+ from tool_sandbox.roles.base_role import BaseRole
+ 
+ 
++def parse_qwen_xml_tool_calls(content: Optional[str]) -> list[Any]:
++    """Convert Qwen's native XML tool calls when vLLM leaves them in content."""
++
++    tool_calls: list[Any] = []
++    for index, payload in enumerate(
++        re.findall(r"<tool_call>\s*(\{.*?\})\s*</tool_call>", content or "", re.DOTALL)
++    ):
++        try:
++            call = json.loads(payload)
++            name = call["name"]
++            arguments = call.get("arguments", {})
++            if isinstance(arguments, str):
++                arguments = json.loads(arguments)
++        except (json.JSONDecodeError, KeyError, TypeError):
++            continue
++        tool_calls.append(
++            SimpleNamespace(
++                id=f"qwen_call_{index}",
++                function=SimpleNamespace(
++                    name=name,
++                    arguments=json.dumps(arguments, ensure_ascii=False),
++                ),
++            )
++        )
++    return tool_calls
++
++
+ class OpenAIAPIAgent(BaseRole):
+     """Agent role for any model that conforms to OpenAI tool use API"""
+ 
+@@ -92,8 +123,11 @@ class OpenAIAPIAgent(BaseRole):
+         )
+         # Parse response
+         openai_response_message = response.choices[0].message
++        tool_calls = openai_response_message.tool_calls or parse_qwen_xml_tool_calls(
++            openai_response_message.content
++        )
+         # Message contains no tool call, aka addressed to user
+-        if openai_response_message.tool_calls is None:
++        if not tool_calls:
+             assert openai_response_message.content is not None
+             response_messages = [
+                 Message(
+@@ -104,7 +138,7 @@ class OpenAIAPIAgent(BaseRole):
+             ]
+         else:
+             assert openai_tools is not NOT_GIVEN
+-            for tool_call in openai_response_message.tool_calls:
++            for tool_call in tool_calls:
+                 # The response contains the agent facing tool name so we need to get
+                 # the execution facing tool name when creating the Python code.
+                 execution_facing_tool_name = (
+@@ -169,3 +203,58 @@ class GPT_3_5_0125_Agent(OpenAIAPIAgent):
+ 
+ class GPT_4_o_2024_05_13_Agent(OpenAIAPIAgent):
+     model_name = "gpt-4o-2024-05-13"
++
++
++class Qwen3_8B_Agent(OpenAIAPIAgent):
++    """Qwen3-8B served by a local OpenAI-compatible vLLM endpoint."""
++
++    model_name = "Qwen/Qwen3-8B"
++
++    def __init__(self) -> None:
++        self.model_name = os.environ.get(
++            "TOOL_SANDBOX_AGENT_MODEL", self.model_name
++        )
++        self.openai_client = OpenAI(
++            api_key=os.environ.get("TOOL_SANDBOX_AGENT_API_KEY", "dummy"),
++            base_url=os.environ.get(
++                "TOOL_SANDBOX_AGENT_BASE_URL", "http://127.0.0.1:8000/v1"
++            ),
++            timeout=float(os.environ.get("TOOL_SANDBOX_AGENT_TIMEOUT", "600")),
++            max_retries=int(os.environ.get("TOOL_SANDBOX_AGENT_MAX_RETRIES", "10")),
++        )
++
++    def model_inference(
++        self,
++        openai_messages: list[
++            dict[
++                Literal["role", "content", "tool_call_id", "name", "tool_calls"],
++                Any,
++            ]
++        ],
++        openai_tools: Union[Iterable[ChatCompletionToolParam], NotGiven],
++    ) -> ChatCompletion:
++        with all_logging_disabled():
++            return self.openai_client.chat.completions.create(
++                model=self.model_name,
++                messages=cast(list[ChatCompletionMessageParam], openai_messages),
++                tools=openai_tools,
++                max_tokens=int(
++                    os.environ.get("TOOL_SANDBOX_AGENT_MAX_TOKENS", "8192")
++                ),
++                temperature=float(
++                    os.environ.get("TOOL_SANDBOX_AGENT_TEMPERATURE", "0.6")
++                ),
++                top_p=float(os.environ.get("TOOL_SANDBOX_AGENT_TOP_P", "0.95")),
++                extra_body={
++                    "top_k": int(
++                        os.environ.get("TOOL_SANDBOX_AGENT_TOP_K", "20")
++                    ),
++                    "chat_template_kwargs": {"enable_thinking": True},
++                },
++            )
++
++
++class EnvScaler_8B_Agent(Qwen3_8B_Agent):
++    """EnvScaler-Qwen3-8B served by a local OpenAI-compatible vLLM endpoint."""
++
++    model_name = "EnvScaler-Qwen3-8B"
+diff --git a/tool_sandbox/roles/openai_api_user.py b/tool_sandbox/roles/openai_api_user.py
+index d82e15c..c49ac72 100644
+--- a/tool_sandbox/roles/openai_api_user.py
++++ b/tool_sandbox/roles/openai_api_user.py
+@@ -2,6 +2,7 @@
+ # Copyright (C) 2024 Apple Inc. All Rights Reserved.
+ """Simulated user role for any model that conforms to OpenAI tool use API"""
+ 
++import os
+ from logging import getLogger
+ from typing import Dict, Iterable, List, Literal, Optional, Union, cast
+ 
+@@ -198,3 +199,25 @@ class GPT_4_0125_User(OpenAIAPIUser):
+ 
+ class GPT_4_o_2024_05_13_User(OpenAIAPIUser):
+     model_name = "gpt-4o-2024-05-13"
++
++
++class GPT_4_1_User(OpenAIAPIUser):
++    """Configurable GPT-4.1 user simulator for OpenAI-compatible gateways."""
++
++    model_name = "gpt-4.1-2025-04-14"
++
++    def __init__(self) -> None:
++        self.model_name = os.environ.get(
++            "TOOL_SANDBOX_USER_MODEL", self.model_name
++        )
++        self.openai_client = OpenAI(
++            api_key=os.environ.get(
++                "TOOL_SANDBOX_USER_API_KEY",
++                os.environ.get("OPENAI_API_KEY", ""),
++            ),
++            base_url=os.environ.get(
++                "TOOL_SANDBOX_USER_BASE_URL", "https://api.openai.com/v1"
++            ),
++            timeout=float(os.environ.get("TOOL_SANDBOX_USER_TIMEOUT", "600")),
++            max_retries=int(os.environ.get("TOOL_SANDBOX_USER_MAX_RETRIES", "10")),
++        )

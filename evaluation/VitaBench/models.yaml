@@ -1,0 +1,27 @@
+# VitaBench model registry. Credentials are NOT stored here: every non-local entry
+# gets its Authorization header and base_url from VITA_EXTERNAL_API_KEY /
+# VITA_EXTERNAL_BASE_URL (filled from BOYUE_* by shared/env.sh).
+default:
+  temperature: 0.0
+  max_input_tokens: 40960
+  headers:
+    Content-Type: application/json
+
+models:
+  - name: Qwen/Qwen3-8B
+    base_url: http://127.0.0.1:8000/v1/chat/completions
+    max_tokens: 8192
+    max_input_tokens: 40960
+    headers:
+      Authorization: "Bearer EMPTY"
+      Content-Type: application/json
+
+  - name: gpt-4.1
+    base_url: https://gateway.invalid/v1/chat/completions
+    max_tokens: 8192
+    max_input_tokens: 32768
+
+  - name: claude-sonnet-4-6
+    base_url: https://gateway.invalid/v1/chat/completions
+    max_tokens: 8192
+    max_input_tokens: 200000

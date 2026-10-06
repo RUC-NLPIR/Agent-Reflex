@@ -1,0 +1,2 @@
+- name: envscaler_openai_fc
+  _target_: recipe.envscaler_openai_fc.agent_loop.EnvScalerOpenAIFCAgentLoop

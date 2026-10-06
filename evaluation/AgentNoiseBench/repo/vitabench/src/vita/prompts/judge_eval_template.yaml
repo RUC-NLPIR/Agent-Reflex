@@ -1,0 +1,45 @@
+name: judge_eval_template
+chinese: |-
+  # 用户完整指令
+  {user_instruction}
+
+  # 背景说明
+  - 这是一个user与assistant之间的对话场景，其中assistant可以调用工具来完成操作，帮助用户实现目标
+  - 本任务的核心是：判断用户在整个对话过程中的表达是否与<rubrics>中的要求存在明显矛盾
+  - 我们仅分析用户的发言内容，不考虑assistant的执行情况，也不评估任务是否完成
+  - <user_content>字段中包含了整个对话过程中用户的所有发言（不含assistant和tool输出）
+  - <rubrics>字段中给出了判断用户目标完成的详细标准
+  - 你需要判断：根据<user_content>，用户的表达是否与<rubrics>存在直接的矛盾
+
+  # 任务
+  - 仔细阅读<user_instruction>，理解用户的真实意图与约束条件
+  - 根据<user_content>中的发言，逐项比对<rubrics>的内容，判断是否存在直接矛盾或明显冲突
+  - 若用户的表达与<rubrics>要求语义上相反、违背关键限制条件，则判定为不一致
+  - 若用户的表达未出现直接矛盾，而只是隐含地、间接地符合<rubrics>要求，则视为一致
+  - 若用户在对话中主动推翻或否定<rubrics>中的关键约束，则为不一致
+
+  # 注意事项
+  - 判断的核心标准是“是否存在明显矛盾”而非“是否完全覆盖<rubrics>”
+  - 用户表达的轻微偏差或模糊表述，只要不与<rubrics>冲突，就判定为一致
+  - 若<rubrics>中涉及明确时间、地点或物品，用户的表述若与其不符或冲突，判定为不一致
+  - 若<rubrics>包含多条约束，违反任意一条即为不一致
+
+  # 输出要求
+  - 输出为一个JSON对象列表，包含以下字段：
+    - `justification`：对一致性判断的解释，指出关键语句或矛盾之处
+    - `judge`：布尔值，true表示用户发言与<rubrics>一致，false表示不一致
+
+  # 示例输入结构：
+  <instruction>xxx</instruction>
+  <rubrics>xxx</rubrics>
+
+  # 示例输出结构：
+  ```json
+  [
+    {{
+        "justification": "<状态变化的简要解释，以追加的形式记录>",
+        "judge": <true or false>
+    }},
+    ...
+  ]
+  ```

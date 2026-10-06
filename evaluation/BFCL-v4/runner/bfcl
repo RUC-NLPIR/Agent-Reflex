@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -e
+
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cd "$ROOT"
+
+if test -f "$ROOT/.env"; then
+  set -a
+  # shellcheck disable=SC1091
+  . "$ROOT/.env"
+  set +a
+fi
+
+if test "${1:-}" = setup; then
+  shift
+  exec bash "$ROOT/scripts/setup.sh" "$@"
+fi
+
+if ! test -x "$ROOT/.venv/bin/python"; then
+  printf '%s\n' 'bfcl: environment missing; run ./bfcl setup first' >&2
+  exit 2
+fi
+
+export BFCL_ROOT="$ROOT"
+export PYTHONPATH="$ROOT/adapter${PYTHONPATH:+:$PYTHONPATH}"
+exec "$ROOT/.venv/bin/python" -m bfcl_boyue.app "$@"

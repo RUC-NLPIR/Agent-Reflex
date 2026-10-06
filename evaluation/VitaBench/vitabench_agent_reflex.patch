@@ -1,0 +1,179 @@
+diff --git a/src/vita/config.py b/src/vita/config.py
+index 01b058e..03c7664 100644
+--- a/src/vita/config.py
++++ b/src/vita/config.py
+@@ -33,6 +33,26 @@ try:
+     for model in models_config_yaml.get('models', []):
+         model_name = model['name']
+         merged_config = _deep_merge_dict(default_model_config, model)
++        # Keep gateway credentials out of the checked-in YAML. Local vLLM
++        # entries remain untouched; external user/evaluator models can be
++        # redirected at launch time with one shared credential pair.
++        if not str(merged_config.get('base_url', '')).startswith(
++            ('http://127.0.0.1', 'http://localhost')
++        ):
++            external_key = os.environ.get('VITA_EXTERNAL_API_KEY')
++            external_base = os.environ.get('VITA_EXTERNAL_BASE_URL')
++            if external_key:
++                merged_config.setdefault('headers', {})['Authorization'] = (
++                    f'Bearer {external_key}'
++                )
++            if external_base:
++                normalized_base = external_base.rstrip('/')
++                if normalized_base.endswith('/chat/completions'):
++                    merged_config['base_url'] = normalized_base
++                elif normalized_base.endswith('/v1'):
++                    merged_config['base_url'] = normalized_base + '/chat/completions'
++                else:
++                    merged_config['base_url'] = normalized_base + '/v1/chat/completions'
+         models[model_name] = merged_config
+ 
+     print(f"Available models: {list(models.keys())}")
+@@ -61,4 +81,4 @@ DEFAULT_AGENT_IMPLEMENTATION = "llm_agent"
+ DEFAULT_USER_IMPLEMENTATION = "user_simulator"
+ DEFAULT_LLM_AGENT = "gpt-4.1"
+ DEFAULT_LLM_USER = "gpt-4.1"
+-DEFAULT_LLM_EVALUATOR = "anthropic.claude-3.7-sonnet"
++DEFAULT_LLM_EVALUATOR = "claude-sonnet-4-6"
+diff --git a/src/vita/run.py b/src/vita/run.py
+index 36f25e9..d5ecf67 100644
+--- a/src/vita/run.py
++++ b/src/vita/run.py
+@@ -1,6 +1,8 @@
+ import json
+ import multiprocessing
++import os
+ import random
++import sys
+ import threading
+ from concurrent.futures import ThreadPoolExecutor
+ from pathlib import Path
+@@ -33,6 +35,13 @@ from vita.utils.utils import DATA_DIR, get_commit_hash, get_now, show_dict_diff,
+ from vita.utils.csv_utils import save_results_to_csv
+ 
+ 
++def confirm_resume(prompt: str) -> str:
++    if os.environ.get("VITA_AUTO_RESUME", "1") == "1" or not sys.stdin.isatty():
++        ConsoleDisplay.console.print(f"{prompt} [auto-yes]")
++        return "y"
++    return ConsoleDisplay.console.input(prompt).lower().strip()
++
++
+ def get_options() -> RegistryInfo:
+     """
+     Returns options for the simulator.
+@@ -268,14 +277,10 @@ def run_tasks(
+     if save_to is not None:
+         # If save_to already exists, check if the user wants to resume the run.
+         if save_to.exists():
+-            response = (
+-                ConsoleDisplay.console.input(
+-                    "[yellow]File [bold]{}[/bold] already exists. Do you want to resume the run? (y/n)[/yellow] ".format(
+-                        save_to
+-                    )
++            response = confirm_resume(
++                "[yellow]File [bold]{}[/bold] already exists. Do you want to resume the run? (y/n)[/yellow] ".format(
++                    save_to
+                 )
+-                .lower()
+-                .strip()
+             )
+             if response != "y":
+                 raise FileExistsError(
+@@ -294,14 +299,10 @@ def run_tasks(
+                     ConsoleDisplay.console.print(
+                         f"The run config has changed.\n\n{diff}\n\nDo you want to resume the run? (y/n)"
+                     )
+-                    response = (
+-                        ConsoleDisplay.console.input(
+-                            "[yellow]File [bold]{}[/bold] already exists. Do you want to resume the run? (y/n)[/yellow] ".format(
+-                                save_to
+-                            )
++                    response = confirm_resume(
++                        "[yellow]File [bold]{}[/bold] already exists. Do you want to resume the run? (y/n)[/yellow] ".format(
++                            save_to
+                         )
+-                        .lower()
+-                        .strip()
+                     )
+                     if response != "y":
+                         raise ValueError(
+@@ -402,6 +403,10 @@ def run_tasks(
+             progress_str = f"{i}/{len(tasks)} (trial {trial + 1}/{num_trials})"
+             args.append((task, trial, seeds[trial], progress_str))
+ 
++    if not args:
++        ConsoleDisplay.console.print("[bold yellow]No remaining tasks to run.[/bold yellow]")
++        return simulation_results
++
+     with ThreadPoolExecutor(max_workers=max_concurrency) as executor:
+         res = list(executor.map(_run, *zip(*args)))
+         # Separate successful and failed tasks
+diff --git a/src/vita/utils/llm_utils.py b/src/vita/utils/llm_utils.py
+index c5e91a5..dd9b724 100644
+--- a/src/vita/utils/llm_utils.py
++++ b/src/vita/utils/llm_utils.py
+@@ -1,4 +1,5 @@
+ import json
++import os
+ import re
+ import time
+ from typing import Any, Optional
+@@ -166,6 +167,25 @@ def to_deepseek_think_official(messages_formatted: list[dict], messages: list[Me
+     return messages_formatted
+ 
+ 
++_OPENAI_BODY_KEYS = (
++    "model", "messages", "stream", "temperature", "tools", "tool_choice",
++    "max_tokens", "max_completion_tokens", "top_p", "stop", "seed", "n",
++    "response_format", "reasoning_effort",
++)
++
++
++def openai_chat_body(data: dict) -> dict:
++    """`data` also carries the registry entry (base_url, headers, ...); send only
++    chat.completions fields. Remote OpenAI-compatible gateways reject the extras
++    and the provider-specific reasoning fields on history messages."""
++    body = {key: data[key] for key in _OPENAI_BODY_KEYS if key in data}
++    if not str(data.get("base_url", "")).startswith(("http://127.0.0.1", "http://localhost")):
++        for message in body.get("messages") or []:
++            for extra in ("reasoning_content", "reasoning", "signature", "thinking"):
++                message.pop(extra, None)
++    return body
++
++
+ def kwargs_adapter(data: dict, enable_think: False, messages: list) -> dict:
+     if "claude" in data["model"]:
+         if not enable_think:
+@@ -225,22 +245,18 @@ def generate(
+             data = kwargs_adapter(data, enable_think, messages)
+             headers = models[model]["headers"]
+ 
+-            max_retries = 3
++            max_retries = int(os.environ.get("VITA_LLM_MAX_RETRIES", "10"))
++            read_timeout = float(os.environ.get("VITA_LLM_TIMEOUT", "600"))
+             retry_delay = 1
+             for attempt in range(max_retries + 1):
+                 try:
+-                    response = requests.post(data["base_url"], json=data, headers=headers, timeout=(10, 600))
+-
+-                    if response.status_code != 500:
+-                        response = response.json()
+-                        break
+-
+-                    if attempt < max_retries:
+-                        logger.warning(f"API returned 500 error, attempt {attempt + 1} retry, retrying in {retry_delay} seconds...")
+-                        time.sleep(retry_delay)
+-                        retry_delay *= 2
+-                    else:
+-                        response.raise_for_status()
++                    response = requests.post(
++                        data["base_url"], json=openai_chat_body(data), headers=headers,
++                        timeout=(10, read_timeout),
++                    )
++                    response.raise_for_status()
++                    response = response.json()
++                    break
+ 
+                 except requests.exceptions.RequestException as e:
+                     if attempt < max_retries:
