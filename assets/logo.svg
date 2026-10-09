@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <mask id="m">
+      <rect x="0" y="40" width="64" height="24" fill="url(#fade)"/>
+    </mask>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
+  <g id="head">
+    <line x1="32" y1="9.5" x2="32" y2="14" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="32" cy="8.5" r="2.6" fill="#fff"/>
+    <rect x="15" y="14" width="34" height="21" rx="8" fill="#fff"/>
+    <rect x="21.5" y="21" width="5.5" height="7" rx="2.75" fill="#5b4be8"/>
+    <rect x="37" y="21" width="5.5" height="7" rx="2.75" fill="#5b4be8"/>
+  </g>
+  <line x1="11" y1="39" x2="53" y2="39" stroke="#fff" stroke-opacity="0.85" stroke-width="2" stroke-linecap="round"/>
+  <g mask="url(#m)">
+    <g transform="translate(0 78) scale(1 -1)">
+      <rect x="15" y="14" width="34" height="21" rx="8" fill="#fff"/>
+    </g>
+    <rect x="21.5" y="50" width="5.5" height="7" rx="2.75" fill="#5b4be8"/>
+    <rect x="37" y="50" width="5.5" height="7" rx="2.75" fill="#5b4be8"/>
+  </g>
+</svg>

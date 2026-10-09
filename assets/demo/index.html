@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent-Reflex · User-Centric Reflection Demo</title>
+<style>
+  :root {
+    --bg: #ffffff; --side: #f9f9f9; --text: #0d0d0d; --muted: #6b6b6b; --line: #e6e6e6; --soft: #f4f4f4;
+    --reflect: #7c3aed; --info: #2563eb; --model: #059669; --noise: #ea580c; --error: #dc2626; --skill: #c2410c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 15px/1.6 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  .app { display: grid; grid-template-columns: 300px 1fr; height: 100vh; }
+
+  aside { background: var(--side); border-right: 1px solid var(--line); padding: 14px 18px 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 16px; }
+  .brand img { width: 30px; height: 30px; }
+  .case { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .case .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .case .v { font-weight: 600; margin-top: 2px; }
+  .case .d { font-size: 12.5px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+  .ur { border: 1px solid #ddd0fb; background: #faf7ff; }
+  .ur .v { color: var(--reflect); }
+  .steps { display: flex; flex-direction: column; gap: 2px; position: relative; }
+  .step { display: flex; gap: 10px; align-items: flex-start; padding: 5px 8px; border-radius: 9px; color: #9a9a9a; font-size: 13px; line-height: 1.4; }
+  .step .n { width: 20px; height: 20px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 11px; font-weight: 600;
+    border: 1.5px solid #cfcfcf; color: #9a9a9a; background: #fff; margin-top: -1px; }
+  .step.done { color: #444; }
+  .step.done .n { background: var(--c); border-color: var(--c); color: #fff; }
+  .step.active { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 0 0 1px var(--c) inset; }
+  .step.active .n { background: var(--c); border-color: var(--c); color: #fff; }
+  .step b { display: block; font-weight: 600; }
+  .legend { margin-top: auto; font-size: 11.5px; color: var(--muted); display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); display: inline-block; }
+
+  .main { display: flex; flex-direction: column; min-width: 0; height: 100vh; }
+  .top { height: 52px; flex: none; display: flex; align-items: center; padding: 0 22px; gap: 8px; border-bottom: 1px solid transparent; }
+  .mname { font-weight: 600; font-size: 16px; }
+  .mname small { color: var(--muted); font-weight: 500; margin-left: 4px; }
+  .tag { margin-left: auto; font-size: 12.5px; font-weight: 600; color: var(--reflect); background: #f3edff; border: 1px solid #ddd0fb; border-radius: 999px; padding: 4px 12px; }
+  #scroll { flex: 1; overflow-y: auto; scrollbar-width: none; }
+  #scroll::-webkit-scrollbar { display: none; }
+  #chat { max-width: 800px; margin: 0 auto; padding: 18px 28px 60px; }
+
+  .msg { margin: 0 0 22px; }
+  .u { display: flex; justify-content: flex-end; }
+  .who { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .who.r { justify-content: flex-end; }
+  .who .ua { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #64748b, #334155); display: grid; place-items: center; flex: none; }
+  .who .la { width: 28px; height: 28px; flex: none; }
+  .who small { color: var(--muted); font-weight: 500; font-size: 12px; }
+  .u .bub { background: var(--soft); border-radius: 20px; padding: 10px 16px; max-width: 78%; white-space: pre-wrap; }
+  .a { display: block; }
+  .a .av { width: 28px; height: 28px; flex: none; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; background: #fff; margin-top: 2px; }
+  .a .av img { width: 20px; height: 20px; }
+  .a .body { min-width: 0; padding-left: 36px; }
+  .txt { white-space: pre-wrap; word-break: break-word; }
+  .note + .txt, .tool + .txt { margin-top: 14px; }
+
+  .think { color: var(--muted); font-size: 14px; margin-bottom: 10px; }
+  .think .hd { font-weight: 500; }
+  .think .hd.shimmer { background: linear-gradient(90deg, #9a9a9a 0%, #e8e8e8 50%, #9a9a9a 100%); background-size: 200% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .think .tb { border-left: 2px solid var(--line); padding: 2px 0 2px 14px; margin-top: 6px; font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; }
+
+  .tool { border: 1px solid var(--line); border-radius: 12px; margin: 10px 0; overflow: hidden; background: #fff; }
+  .tool .th { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 13px; }
+  .tool .th .ic { width: 18px; height: 18px; display: grid; place-items: center; color: var(--muted); }
+  .tool .th .nm { font: 600 12.5px ui-monospace, "SF Mono", Menlo, Consolas, "Courier New"; }
+  .tool .th .ar { font: 12px ui-monospace, "SF Mono", Menlo, Consolas, "Courier New"; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+  .st { margin-left: auto; font-size: 12px; font-weight: 600; flex: none; display: flex; align-items: center; gap: 4px; }
+  .st.ok { color: var(--model); } .st.bad { color: var(--noise); } .st.wait { color: #999; } .st.skip { color: var(--error); }
+  .tool .res { border-top: 1px solid var(--line); background: #fafafa; padding: 8px 12px; font: 11.5px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, "Courier New";
+    color: #555; white-space: pre-wrap; word-break: break-all; max-height: 5.2em; overflow: hidden; }
+  .batch .row { display: flex; gap: 8px; align-items: center; padding: 4px 12px; font: 12px ui-monospace, "SF Mono", Menlo, Consolas, "Courier New"; border-top: 1px solid #f1f1f1; }
+  .batch .row .i { color: #b5b5b5; width: 18px; text-align: right; flex: none; }
+  .batch .row .s { margin-left: auto; color: var(--error); font: 600 11px -apple-system, sans-serif; flex: none; }
+  .batch.flag { border-color: #f3b4b4; box-shadow: 0 0 0 3px rgba(220,38,38,.08); }
+
+  .hl { border-radius: 4px; padding: 0 2px; }
+  .hl.reflect { background: rgba(124,58,237,.12); box-shadow: inset 0 -2px 0 var(--reflect); }
+  .hl.info { background: rgba(37,99,235,.10); box-shadow: inset 0 -2px 0 var(--info); }
+  .hl.model { background: rgba(5,150,105,.11); box-shadow: inset 0 -2px 0 var(--model); }
+  .hl.noise { background: rgba(234,88,12,.12); box-shadow: inset 0 -2px 0 var(--noise); }
+  .hl.skill { background: rgba(217,119,6,.13); box-shadow: inset 0 -2px 0 #d97706; }
+  .skcard { border: 1px solid #f5d0a0; background: #fffaf2; border-radius: 14px; margin: 0 0 6px; overflow: hidden; }
+  .skcard .sh { display: flex; align-items: center; gap: 8px; padding: 9px 14px; font-size: 13px; font-weight: 600; color: var(--skill); border-bottom: 1px solid #f8e1c2; }
+  .skcard .sh small { margin-left: auto; color: #9a6b3c; font-weight: 500; font: 11.5px ui-monospace, "SF Mono", Menlo, Consolas, "Courier New"; }
+  .skcard .sk { display: flex; gap: 10px; padding: 8px 14px; font-size: 13.5px; line-height: 1.5; }
+  .skcard .sk .k { flex: none; width: 20px; height: 20px; border-radius: 50%; background: #d97706; color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; margin-top: 1px; }
+  .skcard .sf { padding: 7px 14px; font-size: 11.5px; color: #9a6b3c; border-top: 1px dashed #f5d0a0; }
+  .flow { text-align: center; color: var(--skill); font-size: 12.5px; font-weight: 600; margin: 4px 0 14px; }
+  .hl.error { background: rgba(220,38,38,.10); box-shadow: inset 0 -2px 0 var(--error); }
+
+  .note { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0 0; font-size: 12.5px; line-height: 1.45; color: #333;
+    border: 1px solid color-mix(in srgb, var(--c) 30%, white); background: color-mix(in srgb, var(--c) 6%, white); border-radius: 10px; padding: 7px 11px; }
+  .u .note { margin-left: auto; max-width: 78%; }
+  .note b { color: var(--c); white-space: nowrap; }
+  .uwrap { display: flex; flex-direction: column; align-items: flex-end; }
+
+  .divider { display: flex; align-items: center; gap: 12px; margin: 6px 0 20px; color: var(--reflect); font-size: 12.5px; font-weight: 600; }
+  .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: #ddd0fb; }
+
+  pre.code { background: #f7f7f8; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font: 12.5px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, "Courier New"; white-space: pre-wrap; margin: 8px 0 0; }
+
+  .composer { flex: none; padding: 6px 28px 18px; }
+  .box { max-width: 744px; margin: 0 auto; border: 1px solid var(--line); border-radius: 26px; padding: 12px 14px 12px 20px; display: flex; align-items: flex-end; gap: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.05); min-height: 54px; }
+  .box .in { flex: 1; color: var(--text); white-space: pre-wrap; max-height: 7.2em; overflow: hidden; font-size: 15px; line-height: 1.5; padding-bottom: 2px; }
+  .box .in.ph { color: #a0a0a0; }
+  .send { width: 32px; height: 32px; border-radius: 50%; background: #d7d7d7; display: grid; place-items: center; flex: none; }
+  .send.on { background: #0d0d0d; }
+  .hint { text-align: center; color: #9a9a9a; font-size: 11.5px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand"><img src="../logo.svg" alt="">Agent-Reflex</div>
+    <div class="case">
+      <div class="k">Case</div>
+      <div class="v">GitLab mirror health check</div>
+      <div class="d">15 MCP tools · noisy feedback</div>
+    </div>
+    <div class="case ur">
+      <div class="k">Reflection type</div>
+      <div class="v"><img src="../logo.svg" alt="" style="width:16px;height:16px;vertical-align:-3px;margin-right:6px">User-Centric Reflection (UR)</div>
+      <div class="d">Skill → user correction → reflection</div>
+    </div>
+    <div class="steps" id="steps"></div>
+    <div class="legend">
+      <span style="--c:var(--error)"><i></i>Agent error</span>
+      <span style="--c:#d97706"><i></i>Environment skill</span>
+      <span style="--c:var(--reflect)"><i></i>User correction</span>
+      <span style="--c:var(--model)"><i></i>Agent reflection</span>
+      <span style="--c:var(--noise)"><i></i>Tool noise</span>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="top">
+      <div class="mname">Agent-Reflex-8B <small>Qwen3-8B · ReSFT + ORPO</small></div>
+      <div class="tag">User-Centric Reflection</div>
+    </div>
+    <div id="scroll"><div id="chat"></div></div>
+    <div class="composer">
+      <div class="box"><div class="in ph" id="input">Message Agent-Reflex</div>
+        <div class="send" id="send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+      </div>
+      <div class="hint">Trajectory from the ReSFT user-centric reflection data · replayed for illustration</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const LOGO = "../logo.svg";
+const USER_ICON = `<span class="ua"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><circle cx="12" cy="8.5" r="4.2"/><path d="M3.8 21c.6-4.4 4-7 8.2-7s7.6 2.6 8.2 7z"/></svg></span>`;
+const PHASES = [
+  ["User gives the task", "5 projects \u00B7 3 syncs \u00B7 1 MR count", "#475569"],
+  ["Agent acts without checking", "13 calls fired at once", "var(--error)"],
+  ["Environment skill retrieved", "RSD skill \u2192 user correction", "#d97706"],
+  ["User steps in", "\u201cpause and re-check\u201d", "var(--reflect)"],
+  ["Agent reflects", "drops the success assumption", "var(--model)"],
+  ["Verified step-by-step", "one call, one check", "var(--model)"],
+  ["Recovers from tool noise", "500 \u2192 504 \u2192 retry", "var(--noise)"],
+  ["Answer", "after step-by-step checks", "var(--model)"],
+];
+
+const P = {
+  iam: "glp_01J7Y0J1E6G9H2J5K8M1N4P7", risk: "glp_01J7Y0S1J6K9M2N5P8R1T4V7", pat: "glp_01J7Y0V2A5C8E1G4H7J0K3M6",
+  siem: "glp_01J7Y0K0R3S6V9W1Y4Z7A0C3", ml: "glp_01J7Y0FQ2W6E9R1T4Y7U0I3O", conn: "glc_01J5J9Q8T2C4X6N9K1P0R7V3D5",
+};
+const call = (name, args) => [name, Object.entries(args).map(([k, v]) => `${k}=${typeof v === "string" ? '"' + v + '"' : v}`).join(", ")];
+const BATCH = [
+  call("get_project_details", { project_id: P.iam }), call("get_project_details", { project_id: P.risk }),
+  call("get_project_details", { project_id: P.pat }), call("get_project_details", { project_id: P.siem }),
+  call("get_project_details", { project_id: P.ml }),
+  call("sync_project", { project_id: P.iam, mode: "full" }), call("sync_project", { project_id: P.risk, mode: "full" }),
+  call("sync_project", { project_id: P.ml, mode: "full" }),
+  call("get_project_details", { project_id: P.iam }), call("get_project_details", { project_id: P.risk }),
+  call("get_project_details", { project_id: P.ml }),
+  call("get_projects", { connection_id: P.conn, limit: 200 }),
+  call("list_open_merge_requests", { project_id: P.ml, draft: false, limit: 200 }),
+];
+
+const S = (t, type) => ({ t, type });
+const SCRIPT = [
+  { phase: 0, kind: "user", seg: [
+      S("For our quarterly compliance review, I need a mirror health report. Check the details of these five GitLab projects: IAM Audit, Risk Scoring, Patient Portal, SIEM Ingest, and ML Feature Store. "),
+      S("I suspect Risk Scoring is inaccessible"), S(" \u2014 "),
+      S("please attempt a sync on IAM Audit, Risk Scoring, and ML Feature Store"),
+      S(" to see if any of them recover. Also pull the full project list for the riverbank-security connection and check what "),
+      S("open non-draft merge requests"), S(" are pending on ML Feature Store. Return one JSON object."),
+    ] },
+
+  { phase: 1, kind: "think", secs: 18, seg: [
+      S("Okay, let me break down what the user is asking for. They need a mirror health report for five specific GitLab projects\u2026\n\nSo the steps are:\n1. For each of the five projects, get their details (initial check).\n2. Sync IAM Audit, Risk Scoring, and ML Feature Store (mode 'full').\n3. For each of the five projects again, check if they are inaccessible after sync.\n4. Get the full project list for the riverbank-security connection.\n5. For ML Feature Store, list open merge requests (non-draft) and count them.\n\n"),
+      S("First, call get_project_details for each of the five projects. Then, sync those three. Then check again. Then get_projects, then list_open_merge_requests for ML Feature Store.", "error"),
+    ] },
+  { phase: 1, kind: "batch", calls: BATCH,
+    note: ["var(--error)", "Agent error", "All 13 calls go out in one shot. The plan depends on what each call returns, but the agent never reads a single result."] },
+
+  { phase: 2, kind: "divider", text: "\u21BA  User-Centric Reflection triggered" },
+  { phase: 2, kind: "skill", env: "env 0207000 \u00B7 GitLab Merge Request Integration", items: [
+      [S("Use the listed operations with "), S("exact task identifiers and arguments", "skill"), S(", then "), S("verify the returned observation before answering", "skill"), S(".")],
+      [S("Preserve the environment\u2019s concrete identifiers, statuses, values, and requested output format in the final response.")],
+    ] },
+  { phase: 3, kind: "user", seg: [
+      S("Please pause and re-check", "reflect"), S(" the connection_id, limit, mode field(s) used in the sync_project call. "),
+      S("Make sure the call targets the entity requested by the user", "skill"), S(", correct any mismatch, and "),
+      S("verify the returned result before proceeding.", "skill"),
+    ], note: ["var(--reflect)", "User correction", "Rewritten from skill 1: the user interrupts and asks the agent to target the requested entity and verify each result."] },
+
+  { phase: 4, kind: "text", seg: [
+      S("I will reconsider the sync_project step rather than assume it succeeded.", "model"),
+      S(" The relevant fields to re-check are connection_id, limit and mode. "),
+      S("I will use the corrected target and confirm the resulting data or state, then answer from that verified result.", "model"),
+    ], note: ["var(--model)", "Agent reflection", "The agent drops the assumption that the batch worked and switches to executing one call at a time, checking each result."] },
+  { phase: 5, kind: "tool", name: "get_projects", args: `connection_id="${P.conn}", limit=200`, status: "wait", label: "no result returned" },
+  { phase: 5, kind: "tool", name: "sync_project", args: `project_id="${P.iam}", mode="full"`, status: "ok",
+    res: [S('{"project": {"name": "IAM Audit", "path_with_namespace": "riverbank-security/iam-audit", '), S('"status": "active"', "model"), S(', "last_synced_at": "2026-08-29T17:12:38Z", "connection_id": "glc_01J5J9Q8T2C4X6N9K1P0R7V3D5"}, "mode": "full"}')] },
+  { phase: 5, kind: "tool", name: "sync_project", args: `project_id="${P.risk}", mode="full"`, status: "ok",
+    res: [S('{"project": {"name": "Risk Scoring", "path_with_namespace": "orchard-finance/risk-scoring", '), S('"status": "inaccessible"', "model"), S(', "last_synced_at": "2026-08-29T17:12:38Z"}, "mode": "full"}')],
+    note: ["var(--model)", "Verified", "Risk Scoring is still inaccessible after the sync, which confirms what the user suspected."] },
+  { phase: 5, kind: "tool", name: "sync_project", args: `project_id="${P.ml}", mode="full"`, status: "ok",
+    res: [S('{"project": {"name": "ML Feature Store", "path_with_namespace": "northwind-labs/ml-feature-store", '), S('"status": "active"', "model"), S(', "last_synced_at": "2026-08-29T17:12:38Z"}, "mode": "full"}')] },
+  { phase: 6, kind: "tool", name: "list_open_merge_requests", args: `project_id="${P.ml}", limit=200`, status: "bad", label: "500",
+    res: [S('{"error": {"type": "execution_failure", "code": 500, "message": "'), S("The tool failed during execution.", "noise"), S('"}}')] },
+  { phase: 6, kind: "tool", name: "list_open_merge_requests", args: `project_id="${P.ml}", limit=200`, status: "bad", label: "504",
+    res: [S('{"error": {"type": "timeout", "code": 504, "message": "'), S("Tool request timed out.", "noise"), S('"}}')],
+    note: ["var(--noise)", "Tool noise", "The environment returns a 500 failure and then a 504 timeout. The agent keeps going instead of making up a count."] },
+  { phase: 6, kind: "tool", name: "sync_merge_request", args: `project_id="${P.ml}", gitlab_mr_iid=1`, status: "bad", label: "NOT_FOUND",
+    res: [S('{"error": {"code": "NOT_FOUND", "message": "'), S("Merge request not found in project.", "noise"), S('"}}')] },
+  { phase: 6, kind: "tool", name: "list_open_merge_requests", args: `project_id="${P.ml}", limit=50`, status: "ok",
+    res: [S('{"merge_requests": [{"gitlab_mr_iid": 33, "title": "Implement server-side search for knowledge base", "state": "opened", '), S('"draft": false', "model"), S('}], '), S('"total": 1', "model"), S(', "has_more": false}')],
+    note: ["var(--model)", "Recovery", "A retry with a smaller page size (limit=50) succeeds and returns one open, non-draft merge request."] },
+
+  { phase: 7, kind: "text", seg: [
+      S("After checking the corrected tool results, I can now answer the request.", "model"),
+      S("\n\n\u2022 riverbank-security has 3 projects\n\u2022 After sync: IAM Audit \u2705 active, ML Feature Store \u2705 active, Risk Scoring \u274C still inaccessible\n\u2022 ML Feature Store: 1 open non-draft merge request"),
+    ], code: '{"riverbank_project_count": 3,\n "inaccessible_project_names": ["Risk Scoring"],\n "ml_feature_store_open_mr_count": 1}',
+    note: ["var(--model)", "Answer", "The agent answers only after re-running the syncs and the merge-request query one call at a time."] },
+];
+
+const $ = (id) => document.getElementById(id);
+const chat = $("chat"), scroller = $("scroll"), input = $("input"), send = $("send");
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const len = (seg) => seg.reduce((a, s) => a + s.t.length, 0);
+
+function segs(seg, target) {
+  const pieces = [];
+  for (const s of seg) {
+    let node;
+    if (s.type) { const sp = el("span", "hl " + s.type); node = document.createTextNode(""); sp.appendChild(node); target.appendChild(sp); pieces.push({ node, full: s.t, span: sp }); }
+    else { node = document.createTextNode(""); target.appendChild(node); pieces.push({ node, full: s.t }); }
+  }
+  return pieces;
+}
+function fill(pieces, n) {
+  for (const p of pieces) {
+    const k = Math.max(0, Math.min(p.full.length, n));
+    p.node.textContent = p.full.slice(0, k);
+    if (p.span) p.span.style.display = k > 0 ? "" : "none";
+    n -= p.full.length;
+  }
+}
+function fade(node) { node.style.opacity = 0; node.style.transform = "translateY(6px)"; return (p) => { const e = Math.min(1, p); node.style.opacity = e; node.style.transform = `translateY(${6 * (1 - e)}px)`; }; }
+function noteEl(n) { const d = el("div", "note"); d.style.setProperty("--c", n[0]); d.append(el("b", null, n[1]), el("span", null, n[2])); return d; }
+function assistantShell() {
+  const m = el("div", "msg a"); const who = el("div", "who");
+  who.innerHTML = `<img class="la" src="${LOGO}" alt="">Agent-Reflex <small>Agent-Reflex-8B</small>`;
+  const body = el("div", "body"); m.append(who, body); chat.appendChild(m); return body;
+}
+let lastBody = null;
+const bodyFor = (step, i) => {
+  const prev = SCRIPT[i - 1];
+  if (lastBody && prev && !["user", "divider"].includes(prev.kind)) return lastBody;
+  return (lastBody = assistantShell());
+};
+
+const ACTIONS = [];
+const add = (dur, start, update, phase) => ACTIONS.push({ dur, start, update, phase });
+const CPS = 95;
+
+SCRIPT.forEach((step, i) => {
+  const ph = step.phase;
+  if (step.kind === "user") {
+    const total = len(step.seg);
+    add(total / 260 * 1000, () => { input.classList.remove("ph"); input.textContent = ""; send.classList.add("on"); },
+      (p) => { let s = ""; let n = Math.floor(total * p); for (const x of step.seg) { s += x.t.slice(0, Math.max(0, n)); n -= x.t.length; } input.textContent = s; input.scrollTop = 1e9; }, ph);
+    let f;
+    add(500, () => {
+      input.textContent = "Message Agent-Reflex"; input.classList.add("ph"); send.classList.remove("on");
+      const w = el("div", "msg u uwrap"); const who = el("div", "who r"); who.innerHTML = `User${USER_ICON}`; w.appendChild(who); const b = el("div", "bub"); fill(segs(step.seg, b), 1e9); w.appendChild(b); chat.appendChild(w); f = fade(w);
+      step._w = w;
+    }, (p) => f(p * 2), ph);
+    if (step.note) { let g; add(1300, () => { const n = noteEl(step.note); step._w.appendChild(n); g = fade(n); }, (p) => g(p * 3), ph); }
+    add(500, () => {}, () => {}, ph);
+  } else if (step.kind === "divider") {
+    let f; add(1200, () => { const d = el("div", "divider", step.text); chat.appendChild(d); f = fade(d); }, (p) => f(p * 2), ph);
+  } else if (step.kind === "skill") {
+    let card, rows = [], f;
+    add(700, () => {
+      card = el("div", "skcard");
+      const sh = el("div", "sh"); sh.innerHTML = `<span>\u2726 Environment skill \u00B7 RSD library</span><small>${step.env}</small>`; card.appendChild(sh);
+      step.items.forEach((seg, k) => { const r = el("div", "sk"); r.appendChild(el("span", "k", String(k + 1))); const t = el("span"); r.appendChild(t); r.style.display = "none"; card.appendChild(r); rows.push([r, segs(seg, t), len(seg)]); });
+      chat.appendChild(card); f = fade(card);
+    }, (p) => f(p * 2), ph);
+    rows.length = 0;
+    step.items.forEach((_, k) => add(1700, () => { rows[k][0].style.display = ""; }, (p) => fill(rows[k][1], Math.floor(rows[k][2] * Math.min(1, p * 1.4))), ph));
+    let g; add(1600, () => { const ft = el("div", "sf", "Training-time only: ReSFT uses this skill to synthesize the user\u2019s correction. The deployed agent never sees it."); card.appendChild(ft); const fl = el("div", "flow", "\u2193  UR sampling: skill 1 is rewritten into a user correction"); card.after(fl); g = fade(fl); }, (p) => g(p * 2), ph);
+  } else if (step.kind === "think") {
+    let hd, tb, pieces, total = len(step.seg);
+    add(1400, () => {
+      const body = bodyFor(step, i); const box = el("div", "think"); hd = el("div", "hd shimmer", "Thinking"); tb = el("div", "tb"); box.append(hd, tb); body.appendChild(box);
+      pieces = segs(step.seg, tb);
+    }, (p) => { hd.style.backgroundPosition = `${200 - p * 400}% 0`; }, ph);
+    add(total / 210 * 1000, () => {}, (p) => { fill(pieces, Math.floor(total * p)); hd.style.backgroundPosition = `${-p * 1200}% 0`; }, ph);
+    add(700, () => { hd.classList.remove("shimmer"); hd.textContent = "Thought"; }, () => {}, ph);
+  } else if (step.kind === "batch") {
+    let card, rows = [];
+    add(600, () => {
+      const body = bodyFor(step, i); card = el("div", "tool batch");
+      const th = el("div", "th"); th.innerHTML = `<span class="ic">\u2699\uFE0E</span><span class="nm">${step.calls.length} tool calls in one shot</span>`;
+      const st = el("span", "st skip", "no result checked"); th.appendChild(st); card.appendChild(th); body.appendChild(card);
+      step.calls.forEach(([n, a], k) => { const r = el("div", "row"); r.innerHTML = `<span class="i">${k + 1}</span><span><b>${n}</b>(${a})</span><span class="s">unverified</span>`; r.style.display = "none"; card.appendChild(r); rows.push(r); });
+    }, () => {}, ph);
+    add(step.calls.length * 170, () => {}, (p) => { const k = Math.ceil(p * rows.length); rows.forEach((r, j) => (r.style.display = j < k ? "" : "none")); }, ph);
+    add(300, () => card.classList.add("flag"), () => {}, ph);
+    let g; add(2400, () => { const n = noteEl(step.note); card.after(n); g = fade(n); }, (p) => g(p * 3), ph);
+  } else if (step.kind === "text") {
+    let pieces, total = len(step.seg), body;
+    add(total / CPS * 1000 * 0.6 + 300, () => { body = bodyFor(step, i); const t = el("div", "txt"); body.appendChild(t); pieces = segs(step.seg, t); },
+      (p) => fill(pieces, Math.floor(total * Math.min(1, p * 1.15))), ph);
+    if (step.code) { let f; add(900, () => { const c = el("pre", "code", step.code); body.appendChild(c); f = fade(c); }, (p) => f(p * 2), ph); }
+    if (step.note) { let g; add(step.phase === 6 ? 3500 : 2000, () => { const n = noteEl(step.note); body.appendChild(n); g = fade(n); }, (p) => g(p * 3), ph); }
+  } else if (step.kind === "tool") {
+    let card, st, res, pieces, total = step.res ? len(step.res) : 0;
+    add(800, () => {
+      const body = bodyFor(step, i); card = el("div", "tool");
+      const th = el("div", "th"); th.innerHTML = `<span class="ic">\u2699\uFE0E</span><span class="nm">${step.name}</span><span class="ar">${step.args}</span>`;
+      st = el("span", "st wait", "Running\u2026"); th.appendChild(st); card.appendChild(th); body.appendChild(card);
+      const f = fade(card); card._f = f;
+    }, (p) => card._f(p * 3), ph);
+    add(step.res ? 900 : 300, () => {
+      st.className = "st " + step.status; st.textContent = step.status === "ok" ? "\u2713 Verified" : step.status === "wait" ? step.label : "\u2715 " + step.label;
+      if (step.res) { res = el("div", "res"); card.appendChild(res); pieces = segs(step.res, res); }
+    }, (p) => pieces && fill(pieces, Math.floor(total * Math.min(1, p * 1.6))), ph);
+    if (step.note) { let g; add(2300, () => { const n = noteEl(step.note); card.after(n); g = fade(n); }, (p) => g(p * 3), ph); }
+    else add(250, () => {}, () => {}, ph);
+  }
+});
+add(2500, () => {}, () => {}, 8);
+
+const stepsEl = $("steps");
+PHASES.forEach(([t, d, c], k) => {
+  const s = el("div", "step"); s.style.setProperty("--c", c);
+  s.innerHTML = `<span class="n">${k + 1}</span><span><b>${t}</b>${d}</span>`; stepsEl.appendChild(s);
+});
+function setPhase(ph) { [...stepsEl.children].forEach((s, k) => { s.classList.toggle("active", k === ph); s.classList.toggle("done", k < ph); }); }
+
+let ai = -1, at = 0;
+function tick(dt) {
+  if (ai >= ACTIONS.length) return false;
+  if (ai < 0 || at >= ACTIONS[ai].dur) {
+    if (ai >= 0) ACTIONS[ai].update(1);
+    ai++; at = 0;
+    if (ai >= ACTIONS.length) return false;
+    ACTIONS[ai].start(); setPhase(ACTIONS[ai].phase);
+  }
+  at += dt;
+  ACTIONS[ai].update(Math.min(1, at / ACTIONS[ai].dur));
+  const target = scroller.scrollHeight - scroller.clientHeight;
+  scroller.scrollTop += (target - scroller.scrollTop) * Math.min(1, dt / 160);
+  return true;
+}
+window.__tick = tick;
+window.__total = ACTIONS.reduce((a, x) => a + x.dur, 0);
+
+if (!/record/.test(location.search)) {
+  let last = performance.now();
+  const loop = (now) => { const dt = Math.min(64, now - last); last = now; if (tick(dt)) requestAnimationFrame(loop); };
+  setTimeout(() => requestAnimationFrame((n) => { last = n; loop(n); }), 600);
+}
+</script>
+</body>
+</html>

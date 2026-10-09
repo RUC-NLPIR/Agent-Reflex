@@ -2,9 +2,7 @@
 
 <img src="assets/cover.gif" alt="Agent-Reflex" width="100%">
 
-# 🪞 Agent-Reflex
-
-### Teaching Language Agents to Act Reflectively
+<h1><img src="assets/logo.png" alt="" width="44" align="absmiddle">&nbsp;Agent-Reflex: Teaching Language Agents to Act Reflectively</h1>
 
 ##### If you like our project, please give us a star ⭐ on GitHub for the latest update.
 
@@ -17,30 +15,66 @@
 
 *A training framework that elicits **proactive reflection** in tool-using LLM agents: noticing noisy tool feedback and user corrections, and recovering from them.*
 
-[Overview](#-overview) · [Framework](#-agent-reflex-framework) · [Results](#-benchmarks--results) · [Installation](#-installation) · [Data](#-data) · [Quick Start](#-quick-start) · [Citation](#-citation)
+[Demo](#-demo) · [Overview](#-overview) · [Framework](#-agent-reflex-framework) · [Results](#-benchmarks--results) · [Installation](#-installation) · [Data](#-data) · [Quick Start](#-quick-start) · [Citation](#-citation)
 
 </div>
 
 ## 📣 News
 
-* **[2026-10]** 🚀 Released the full codebase (RSD skill library, ReSFT, ORPO, evaluation), the **Agent-Reflex-8B** checkpoint and the **SFT / RL datasets** on 🤗 Hugging Face.
+* **[2026-10]** 🤗 The **ReSFT data (54,663 trajectories)** and **ORPO tasks (2,550 with skills)** are now available on Hugging Face: [SFT-54K](https://huggingface.co/datasets/dongguanting/Agent-Reflex-SFT-54K) · [RL-2K](https://huggingface.co/datasets/dongguanting/Agent-Reflex-RL-2K).
+* **[2026-10]** 🤗 The **[Agent-Reflex-8B](https://huggingface.co/dongguanting/Agent-Reflex-8B)** checkpoint (Qwen3-8B, ReSFT + ORPO) is released.
+* **[2026-10]** 🚀 Full codebase released: the RSD skill library (1,170 meta-skills), ReSFT and ORPO training recipes, and evaluation on six benchmarks.
+* **[2026-10]** 📄 Our paper **Agent-Reflex: Teaching Language Agents to Act Reflectively** is now available on [arXiv](https://arxiv.org/abs/XXXX.XXXXX).
+
+## 🎬 Demo
+
+### User-Centric Reflection on a Noisy MCP Task
+
+https://github.com/user-attachments/assets/8c73de1c-7767-4e9d-823f-fa68a3a87620
+
+<p align="center"><sub>🎥 <a href="assets/demo/demo.mp4">Download the 1080p video</a> · 💻 <a href="assets/demo/index.html">interactive replay</a> (open locally in a browser)</sub></p>
+
+The agent must audit five GitLab mirror projects with 15 MCP tools. It first fires 13 calls in one shot without reading any result. The environment's **reflection skill** from the RSD library is then rewritten (UR sampling) into a **user correction**: the user steps in ("pause and re-check"), and the agent **reflects**: it drops the assumption that the batch worked, re-executes one call at a time and verifies each result. Along the way it absorbs **tool noise** (500 failure → 504 timeout → NOT_FOUND) and recovers with a smaller page size before answering. The left panel tracks the eight steps of this **User-Centric Reflection (UR)** process; highlights mark <code>agent error</code>, <code>environment skill</code>, <code>user correction</code>, <code>agent reflection</code> and <code>tool noise</code>.
 
 ## 💡 Overview
 
-<p align="center"><img src="assets/motivation.jpg" width="100%"></p>
+**Agents are trained in idealized environments but deployed into noisy ones.** Environment scaling has given agents diverse, executable worlds to learn from, but these worlds still assume stable tools and a passive user. Real deployment breaks this assumption in two ways:
 
-LLM agents are moving from single-turn chat to long-horizon tool use, but most scalable training environments assume **idealized interaction**: a fixed task and clean, deterministic tool feedback. Real deployment is different. Tool services time out, reject permissions or return malformed results, and users step in with corrections at any turn. Under noise, agents that look strong on clean benchmarks degrade sharply (panel c), and the recorded tool errors fall into a small set of recurring families (panel d).
+* **(1) Lack of noisy environment feedback.** Real MCP tool services are unreliable: they time out, reject permissions, rate-limit or return malformed results. Training environments return mostly clean, deterministic feedback, so agents never learn to detect a failure and recover from it.
+* **(2) Lack of user-guided correction.** Real users interrupt when the agent drifts from their intent and correct its reasoning or actions mid-trajectory. User simulators speak mainly through standardized templates and rarely issue such corrections, so agents are not trained to take them on board.
 
-**Agent-Reflex** is a general training framework that incentivizes **proactive reflective thinking** in agents. It mines reusable reflection meta-skills from noisy environments, distills them into supervised data, and reinforces them with noisy agentic RL, so that the agent learns to notice what went wrong and recover on its own. On Qwen3-8B it improves six challenging agent benchmarks and stays robust under noise, with stable training dynamics.
+<p align="center"><b>Figure 1 (a, b) · The two gaps.</b> Idealized interaction gives a fixed task and clean feedback (a); real-world interaction brings multi-turn user corrections and noisy tool feedback (b).</p>
+<p align="center"><img src="assets/motivation_problem.png" width="100%"></p>
+
+<p align="center"><b>Figure 1 (c, d) · What noise does to strong agents.</b> GPT-5.2 and Claude-4.5-Sonnet lose success rate on τ²-Bench / VitaBench domains under user or tool noise (c); recorded tool errors fall into eight recurring families, led by service unavailability, auth failures and timeouts (d).</p>
+<p align="center"><img src="assets/motivation_impact.png" width="100%"></p>
+
+**Agent-Reflex** closes both gaps with a general training framework that incentivizes **proactive reflective thinking**. It treats reflection as a learnable meta-skill: reusable skills are mined from execution failures in noisy environments, distilled into supervised data, and reinforced with noisy agentic RL, so that the agent learns to notice what went wrong and recover on its own. On Qwen3-8B it improves six challenging agent benchmarks and stays robust under noise, with stable training dynamics.
 
 ## ✨ Agent-Reflex Framework
 
-<p align="center"><img src="assets/rsd_resft.jpg" width="100%"></p>
-<p align="center"><img src="assets/orpo.jpg" width="100%"></p>
+Agent-Reflex has three stages: **RSD** builds failure-aware environments and mines reflection meta-skills, **ReSFT** turns each skill into verified reflection data, and **ORPO** reinforces reflection on-policy under noisy interaction.
 
-* **Stage 1 · Environment Reflection Skill Discovery (RSD).** RSD injects empirically grounded tool-return perturbations (eight failure families) into scaled executable environments, samples a capability-diverse LLM pool to mine matched success / failure pairs, and summarizes them into an offline library of **1,170 reusable reflection meta-skills** over 557 MCP-anchored environments.
-* **Stage 2 · Reflective Supervised Fine-Tuning (ReSFT).** Each skill is turned into three kinds of supervision at complementary levels: self-reflection (local repair), skill-guided recovery (global restart) and user-centric correction. Only verifier-validated continuations are kept, giving **54,663** trajectories.
-* **Stage 3 · On-Policy Reflective Policy Optimization (ORPO).** ORPO mixes clean and fault-injected rollouts in one GRPO group and adds reflection-guided on-policy distillation: the sampled tokens are re-scored with the environment's skill in context, and the policy is pulled towards skill-endorsed tokens, gated by confidence. Skills are used only during training; the deployed agent is skill-free.
+### Stage 1 · Environment Reflection Skill Discovery (RSD)
+
+RSD injects empirically grounded tool-return perturbations (eight failure families) into scaled executable environments, samples a capability-diverse LLM pool to mine matched success / failure pairs, and summarizes them into an offline library of **1,170 reusable reflection meta-skills** over 557 MCP-anchored environments.
+
+<p align="center"><b>Figure 2 · RSD.</b> MCP servers → synthesized environments → noise tool injection → verifiable tasks → LLM-pool rollouts → reflection meta-skills (environment, tools, bad patterns, skills).</p>
+<p align="center"><img src="assets/stage1_rsd.png" width="100%"></p>
+
+### Stage 2 · Reflective Supervised Fine-Tuning (ReSFT)
+
+Each skill is turned into three kinds of supervision at complementary levels: **Self-Reflection (SR)** for local repair, **Skill Recovery (KR)** for global restart and **User-Centric Reflection (UR)** for user correction (the case shown in the [demo](#-demo)). Only verifier-validated continuations are kept and skill prompts are stripped, giving **54,663** trajectories.
+
+<p align="center"><b>Figure 3 · ReSFT.</b> A failed rollout and its skill card are expanded by SR / KR / UR sampling; a rubric verifier keeps only passing rollouts for the reflection dataset.</p>
+<p align="center"><img src="assets/stage2_resft.png" width="100%"></p>
+
+### Stage 3 · On-Policy Reflective Policy Optimization (ORPO)
+
+ORPO mixes clean and fault-injected rollouts in one GRPO group and adds reflection-guided on-policy distillation: the sampled tokens are re-scored with the environment's skill in context, and the policy is pulled towards skill-endorsed tokens, gated by confidence. Skills are used only during training; the deployed agent is skill-free.
+
+<p align="center"><b>Figure 4 · ORPO.</b> Top: noisy agentic RL with a group-relative advantage. Bottom: the same actions are re-scored by a skill-injected teacher, giving a detached, confidence-gated OPD loss.</p>
+<p align="center"><img src="assets/stage3_orpo.png" width="100%"></p>
 
 ## 📊 Benchmarks & Results
 
@@ -66,10 +100,11 @@ On Qwen3-8B, Agent-Reflex reaches **55.8** Overall on the five long-horizon tool
 | **Agent-Reflex** | **17.5** | **54.9** | **48.9** | **76.0** | **81.8** | **55.8** | **21.4** |
 
 <details>
-<summary><b>Full tables and the RL algorithm comparison</b></summary>
+<summary><b>Full tables, noise robustness and the RL algorithm comparison</b></summary>
 
 <p align="center"><img src="assets/main_results.png" width="100%"></p>
 <p align="center"><img src="assets/agentnoisebench.png" width="100%"></p>
+<p align="center"><img src="assets/noise_radar.png" width="100%"></p>
 <p align="center"><img src="assets/orpo_vs_rl.png" width="100%"></p>
 
 </details>
@@ -113,7 +148,7 @@ Agent-Reflex/
 ├── LLaMA-Factory/   📘 Stage 2 · ReSFT recipe and launch scripts
 ├── ORPO/            🎯 Stage 3 · verl-based ORPO: noisy rollouts + skill-guided OPD
 ├── evaluation/      📊 τ²-Bench, BFCL V4, ACEBench, VitaBench, AgentNoiseBench, ToolSandbox
-└── assets/          🖼️ figures used in this README
+└── assets/          🖼️ figures used in this README; demo/ holds the demo video and replay page
 ```
 
 | Folder | What you get | Start here |
