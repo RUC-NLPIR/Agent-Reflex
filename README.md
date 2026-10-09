@@ -34,46 +34,39 @@ https://github.com/user-attachments/assets/8c73de1c-7767-4e9d-823f-fa68a3a87620
 
 <p align="center"><sub>🎥 <a href="assets/demo/demo.mp4">Download the 1080p video</a> · 💻 <a href="assets/demo/index.html">interactive replay</a> (open locally in a browser)</sub></p>
 
-The agent must audit five GitLab mirror projects with 15 MCP tools. It first fires 13 calls in one shot without reading any result. The environment's **reflection skill** from the RSD library is then rewritten (UR sampling) into a **user correction**: the user steps in ("pause and re-check"), and the agent **reflects**: it drops the assumption that the batch worked, re-executes one call at a time and verifies each result. Along the way it absorbs **tool noise** (500 failure → 504 timeout → NOT_FOUND) and recovers with a smaller page size before answering. The left panel tracks the eight steps of this **User-Centric Reflection (UR)** process; highlights mark <code>agent error</code>, <code>environment skill</code>, <code>user correction</code>, <code>agent reflection</code> and <code>tool noise</code>.
-
 ## 💡 Overview
 
-**Agents are trained in idealized environments but deployed into noisy ones.** Environment scaling has given agents diverse, executable worlds to learn from, but these worlds still assume stable tools and a passive user. Real deployment breaks this assumption in two ways:
+**Agents are trained in idealized environments but deployed into noisy ones.** Two gaps follow:
 
-* **(1) Lack of noisy environment feedback.** Real MCP tool services are unreliable: they time out, reject permissions, rate-limit or return malformed results. Training environments return mostly clean, deterministic feedback, so agents never learn to detect a failure and recover from it.
-* **(2) Lack of user-guided correction.** Real users interrupt when the agent drifts from their intent and correct its reasoning or actions mid-trajectory. User simulators speak mainly through standardized templates and rarely issue such corrections, so agents are not trained to take them on board.
+* **(1) No noisy feedback.** Real MCP tools time out, reject permissions or return malformed results, yet training environments return clean feedback, so agents never learn to detect and recover from failures.
+* **(2) No user correction.** Real users interrupt and correct the agent mid-task, yet user simulators rarely issue such corrections.
 
-<p align="center"><b>Figure 1 (a, b) · The two gaps.</b> Idealized interaction gives a fixed task and clean feedback (a); real-world interaction brings multi-turn user corrections and noisy tool feedback (b).</p>
+<p align="center"><b>Figure 1 (a, b) · The two gaps.</b> Idealized interaction (a) vs. real-world interaction with user corrections and noisy feedback (b).</p>
 <p align="center"><img src="assets/motivation_problem.png" width="100%"></p>
 
-<p align="center"><b>Figure 1 (c, d) · What noise does to strong agents.</b> GPT-5.2 and Claude-4.5-Sonnet lose success rate on τ²-Bench / VitaBench domains under user or tool noise (c); recorded tool errors fall into eight recurring families, led by service unavailability, auth failures and timeouts (d).</p>
+<p align="center"><b>Figure 1 (c, d) · The cost of noise.</b> Strong agents lose success rate under user or tool noise (c); tool errors fall into eight recurring families (d).</p>
 <p align="center"><img src="assets/motivation_impact.png" width="100%"></p>
 
-**Agent-Reflex** closes both gaps with a general training framework that incentivizes **proactive reflective thinking**. It treats reflection as a learnable meta-skill: reusable skills are mined from execution failures in noisy environments, distilled into supervised data, and reinforced with noisy agentic RL, so that the agent learns to notice what went wrong and recover on its own. On Qwen3-8B it improves six challenging agent benchmarks and stays robust under noise, with stable training dynamics.
+**Agent-Reflex** treats reflection as a learnable meta-skill: it mines skills from failures in noisy environments, distills them into supervised data and reinforces them with noisy agentic RL. On Qwen3-8B it improves six agent benchmarks and stays robust under noise.
 
 ## ✨ Agent-Reflex Framework
 
-Agent-Reflex has three stages: **RSD** builds failure-aware environments and mines reflection meta-skills, **ReSFT** turns each skill into verified reflection data, and **ORPO** reinforces reflection on-policy under noisy interaction.
-
 ### Stage 1 · Environment Reflection Skill Discovery (RSD)
 
-RSD injects empirically grounded tool-return perturbations (eight failure families) into scaled executable environments, samples a capability-diverse LLM pool to mine matched success / failure pairs, and summarizes them into an offline library of **1,170 reusable reflection meta-skills** over 557 MCP-anchored environments.
+Build failure-aware executable environments by perturbing tool returns with real-world failure families, and mine verifier-matched success / failure pairs into an offline library of **1,170 reflection meta-skills**.
 
-<p align="center"><b>Figure 2 · RSD.</b> MCP servers → synthesized environments → noise tool injection → verifiable tasks → LLM-pool rollouts → reflection meta-skills (environment, tools, bad patterns, skills).</p>
 <p align="center"><img src="assets/stage1_rsd.png" width="100%"></p>
 
 ### Stage 2 · Reflective Supervised Fine-Tuning (ReSFT)
 
-Each skill is turned into three kinds of supervision at complementary levels: **Self-Reflection (SR)** for local repair, **Skill Recovery (KR)** for global restart and **User-Centric Reflection (UR)** for user correction (the case shown in the [demo](#-demo)). Only verifier-validated continuations are kept and skill prompts are stripped, giving **54,663** trajectories.
+Convert each skill into verifier-validated **self-reflection (SR)**, **skill recovery (KR)** and **user-correction (UR)** data, with skill prompts stripped, and internalize them by supervised fine-tuning.
 
-<p align="center"><b>Figure 3 · ReSFT.</b> A failed rollout and its skill card are expanded by SR / KR / UR sampling; a rubric verifier keeps only passing rollouts for the reflection dataset.</p>
 <p align="center"><img src="assets/stage2_resft.png" width="100%"></p>
 
 ### Stage 3 · On-Policy Reflective Policy Optimization (ORPO)
 
-ORPO mixes clean and fault-injected rollouts in one GRPO group and adds reflection-guided on-policy distillation: the sampled tokens are re-scored with the environment's skill in context, and the policy is pulled towards skill-endorsed tokens, gated by confidence. Skills are used only during training; the deployed agent is skill-free.
+Combine Noisy Agent RL with same-token, skill-guided on-policy distillation (OPD) to provide dense reflection supervision. Skills are used only in training; the deployed agent is skill-free.
 
-<p align="center"><b>Figure 4 · ORPO.</b> Top: noisy agentic RL with a group-relative advantage. Bottom: the same actions are re-scored by a skill-injected teacher, giving a detached, confidence-gated OPD loss.</p>
 <p align="center"><img src="assets/stage3_orpo.png" width="100%"></p>
 
 ## 📊 Benchmarks & Results
