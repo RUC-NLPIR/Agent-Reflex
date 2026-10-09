@@ -13,7 +13,7 @@ ReSFT (LLaMA-Factory, transformers 5.x) saves two things that transformers 4.54
 The legacy keys are written next to the new ones, so the checkpoint stays valid
 for both versions. Without ``--apply`` the script only reports.
 
-    python scripts/prepare_init_checkpoint.py /path/to/checkpoint-5127 --apply
+    python scripts/prepare_init_checkpoint.py /path/to/resft_checkpoint --apply
 """
 
 import argparse

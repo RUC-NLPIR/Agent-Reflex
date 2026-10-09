@@ -6,65 +6,57 @@
 
 ### Teaching Language Agents to Act Reflectively
 
+##### If you like our project, please give us a star ⭐ on GitHub for the latest update.
+
 [![Paper](https://img.shields.io/badge/Paper-arXiv-b5212f.svg?logo=arxiv)](https://arxiv.org/abs/XXXX.XXXXX)
+[![Model](https://img.shields.io/badge/🤗%20Model-Agent--Reflex--8B-ffc107.svg)](https://huggingface.co/dongguanting/Agent-Reflex-8B)
+[![SFT Data](https://img.shields.io/badge/🤗%20SFT%20Data-54K-ffc107.svg)](https://huggingface.co/datasets/dongguanting/Agent-Reflex-SFT-54K)
+[![RL Data](https://img.shields.io/badge/🤗%20RL%20Data-2K-ffc107.svg)](https://huggingface.co/datasets/dongguanting/Agent-Reflex-RL-2K)
 [![Skills](https://img.shields.io/badge/RSD%20Skills-1%2C170-f7be50.svg)](RSD)
-[![Data](https://img.shields.io/badge/Data-ReSFT%20%7C%20ORPO-7b61c4.svg)](#-data)
-[![Model](https://img.shields.io/badge/Backbone-Qwen3--8B-40bac0.svg)](https://huggingface.co/Qwen/Qwen3-8B)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 *A training framework that elicits **proactive reflection** in tool-using LLM agents: noticing noisy tool feedback and user corrections, and recovering from them.*
 
+[Overview](#-overview) · [Framework](#-agent-reflex-framework) · [Results](#-benchmarks--results) · [Installation](#-installation) · [Data](#-data) · [Quick Start](#-quick-start) · [Citation](#-citation)
+
 </div>
 
-## 💡 Highlights
+## 📣 News
 
-* **Reflection as a learnable meta-skill.** RSD mines **1,170 reflection meta-skills** from success / failure contrasts in MCP-anchored environments with real tool-error perturbations.
-* **Reflective SFT.** ReSFT turns the skills into self-reflection, skill-recovery and user-centric correction data: **54,663** verified trajectories.
-* **Reflective RL.** ORPO mixes clean and fault-injected rollouts in one GRPO group and adds a confidence-gated, skill-guided on-policy distillation term. Skills are used only during training; deployment is skill-free.
-* **Strong 8B agent.** On Qwen3-8B, Agent-Reflex reaches **55.8** Overall on five long-horizon tool-use benchmarks (+15.6 over the backbone, +7.4 over EnvScaler-8B) and leads every 8B method on AgentNoiseBench.
+* **[2026-10]** 🚀 Released the full codebase (RSD skill library, ReSFT, ORPO, evaluation), the **Agent-Reflex-8B** checkpoint and the **SFT / RL datasets** on 🤗 Hugging Face.
 
-## 🔧 Dependencies
+## 💡 Overview
 
-Set these up before running anything.
+<p align="center"><img src="assets/motivation.jpg" width="100%"></p>
 
-| What | Needed for | Details |
-| --- | --- | --- |
-| NVIDIA GPUs (80 GB) | all | ReSFT 2 × 8 GPUs, ORPO 1 × 8, evaluation 1 × 8. Driver must support CUDA 12.8 (ORPO uses cu128 wheels). |
-| [uv](https://github.com/astral-sh/uv) + git | all | `pip install uv`. Each part's `setup_env.sh` / `setup.sh` builds its own venv and Python (3.10 for ORPO, 3.12 for ReSFT and vLLM) from a pinned `requirements.txt`. |
-| Network access | setup | GitHub, PyPI and Hugging Face. The evaluation setup clones the upstream benchmarks at pinned commits. Export `HTTP_PROXY` / `HTTPS_PROXY` if you are behind a proxy. |
-| [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B) | ReSFT | Base model; pass its local path as `MODEL_PATH`. |
-| Agent-Reflex-data | ReSFT, ORPO | Training data, see [Data](#-data). |
-| **Boyue API key** | evaluation | User simulator (`gpt-4.1`) and judge (`claude-sonnet-4-6`) for every benchmark except BFCL. See below. |
-| **Serper API key** | evaluation | BFCL V4 web-search category only. Register at [serper.dev](https://serper.dev) and copy the API key from the dashboard. |
+LLM agents are moving from single-turn chat to long-horizon tool use, but most scalable training environments assume **idealized interaction**: a fixed task and clean, deterministic tool feedback. Real deployment is different. Tool services time out, reject permissions or return malformed results, and users step in with corrections at any turn. Under noise, agents that look strong on clean benchmarks degrade sharply (panel c), and the recorded tool errors fall into a small set of recurring families (panel d).
 
-**Getting the Boyue key.** Boyue is an OpenAI-compatible API gateway. Register at [api.boyuerichdata.opensphereai.com](https://api.boyuerichdata.opensphereai.com) (docs: [boyuerichdata.apifox.cn](https://boyuerichdata.apifox.cn/)), open the **API令牌 (API tokens)** page and create a token in the `auto` group. The key is a string that starts with `sk-`. Paste it into `evaluation/.env`, the only file the evaluation scripts read credentials from:
+**Agent-Reflex** is a general training framework that incentivizes **proactive reflective thinking** in agents. It mines reusable reflection meta-skills from noisy environments, distills them into supervised data, and reinforces them with noisy agentic RL, so that the agent learns to notice what went wrong and recover on its own. On Qwen3-8B it improves six challenging agent benchmarks and stays robust under noise, with stable training dynamics.
 
-```bash
-cd evaluation && cp .env.example .env
-# edit evaluation/.env:
-BOYUE_API_KEY=sk-xxxxxxxx
-BOYUE_API_BASE_URL=http://35.220.164.252:3888/v1   # outside CN/HK: https://api.boyuerichdata.opensphereai.com/v1
-SERPER_API_KEY=xxxxxxxx
-```
-
-`.env` is git-ignored. Training needs no API keys.
-
-## 🧩 Framework
-
-Real interaction is not clean: tools time out, permissions fail, and users correct the agent mid-task. Agent-Reflex trains the agent for that regime in three stages.
+## ✨ Agent-Reflex Framework
 
 <p align="center"><img src="assets/rsd_resft.jpg" width="100%"></p>
-
-**Stage 1 · RSD** perturbs tool returns of executable environments with mined failure families, samples a capability-diverse LLM pool, and summarizes matched success / failure pairs into an offline skill library.
-**Stage 2 · ReSFT** samples local-repair, global-restart and user-correction continuations from failed trajectories and keeps only verifier-validated ones.
-
 <p align="center"><img src="assets/orpo.jpg" width="100%"></p>
 
-**Stage 3 · ORPO** re-scores the same sampled tokens with the environment's skill in context and pulls the policy towards skill-endorsed tokens, gated by confidence, alongside the outcome-based RL objective.
+* **Stage 1 · Environment Reflection Skill Discovery (RSD).** RSD injects empirically grounded tool-return perturbations (eight failure families) into scaled executable environments, samples a capability-diverse LLM pool to mine matched success / failure pairs, and summarizes them into an offline library of **1,170 reusable reflection meta-skills** over 557 MCP-anchored environments.
+* **Stage 2 · Reflective Supervised Fine-Tuning (ReSFT).** Each skill is turned into three kinds of supervision at complementary levels: self-reflection (local repair), skill-guided recovery (global restart) and user-centric correction. Only verifier-validated continuations are kept, giving **54,663** trajectories.
+* **Stage 3 · On-Policy Reflective Policy Optimization (ORPO).** ORPO mixes clean and fault-injected rollouts in one GRPO group and adds reflection-guided on-policy distillation: the sampled tokens are re-scored with the environment's skill in context, and the policy is pulled towards skill-endorsed tokens, gated by confidence. Skills are used only during training; the deployed agent is skill-free.
 
-## 📊 Results
+## 📊 Benchmarks & Results
 
-Benchmark averages on Qwen3-8B (full breakdown in the paper):
+We evaluate on six agent benchmarks under each benchmark's official metric:
+
+* **General Function Calling:**
+  * [BFCL V4](https://gorilla.cs.berkeley.edu/leaderboard.html) ([paper](https://proceedings.mlr.press/v267/patil25a.html)): the Berkeley Function Calling Leaderboard extended to agentic evaluation (web search, memory, multi-turn, live / non-live, irrelevance); 5,217 tasks.
+  * [ACEBench](https://arxiv.org/abs/2501.12851): normal, special and agentic tool use, emphasizing when to call a tool and how to handle underspecified requests.
+  * [ToolSandbox](https://arxiv.org/abs/2408.04682): stateful, conversational tool use with implicit state dependencies, an LLM user simulator and deliberately unsolvable tasks; 200 offline scenarios.
+* **Long-Horizon Interactive Workflows:**
+  * [τ²-Bench](https://arxiv.org/abs/2506.07982): dual-control airline, retail and telecom domains where agent and user both act on shared state under a policy document.
+  * [VitaBench](https://arxiv.org/abs/2509.26490): delivery, in-store and OTA domains plus cross-scenario tasks spanning domains within one episode.
+* **Noisy Interaction:**
+  * [AgentNoiseBench](https://arxiv.org/abs/2602.11348): tool-side and user-side perturbations injected into τ²-Bench and VitaBench environments.
+
+On Qwen3-8B, Agent-Reflex reaches **55.8** Overall on the five long-horizon tool-use benchmarks (+15.6 over the backbone, +7.4 over EnvScaler-8B) and leads every 8B method on AgentNoiseBench:
 
 | Method | VitaBench | τ²-Bench | BFCL V4 | ACEBench | ToolSandbox | **Overall** | AgentNoiseBench |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -82,6 +74,37 @@ Benchmark averages on Qwen3-8B (full breakdown in the paper):
 
 </details>
 
+## 🔧 Installation
+
+### Environment Setup
+
+Each part has its own environment, built by one script with [uv](https://github.com/astral-sh/uv) (`pip install uv`) from a pinned `requirements.txt`:
+
+| Part | Python | Core packages | Setup |
+| --- | :---: | --- | --- |
+| ReSFT | 3.12 | torch 2.6.0 (cu124), transformers 5.8, DeepSpeed 0.19, flash-attn 2.7.4, Liger 0.8 | `bash LLaMA-Factory/setup_env.sh` |
+| ORPO | 3.10 | torch 2.7.1 (cu128), verl 0.5, SGLang 0.4.10.post2, transformers 4.54.1, Ray 2.57, flash-attn 2.8.3 | `bash ORPO/setup_env.sh` |
+| Model serving | 3.12 | vLLM 0.27.1 | `bash evaluation/shared/setup_vllm.sh` |
+| Benchmarks | 3.10 / 3.12 | one venv per benchmark; upstream code cloned at pinned commits | `bash evaluation/<Bench>/setup.sh` |
+
+* **Hardware**: NVIDIA 80 GB GPUs with a driver supporting CUDA 12.8. ReSFT uses 2 × 8 GPUs; ORPO and evaluation use 1 × 8.
+* **Network**: the setup scripts need GitHub, PyPI and Hugging Face. Behind a proxy, export `HTTP_PROXY` / `HTTPS_PROXY` first.
+
+### API Configuration
+
+Training needs no API keys. Evaluation reads them from `evaluation/.env` (git-ignored):
+
+```bash
+cp evaluation/.env.example evaluation/.env
+# then edit evaluation/.env:
+BOYUE_API_KEY=sk-xxxxxxxx
+BOYUE_API_BASE_URL=http://35.220.164.252:3888/v1   # outside CN/HK: https://api.boyuerichdata.opensphereai.com/v1
+SERPER_API_KEY=xxxxxxxx
+```
+
+* `BOYUE_API_KEY`: the user simulator (`gpt-4.1`) and judge (`claude-sonnet-4-6`) for every benchmark except BFCL. Register at [Boyue API](https://api.boyuerichdata.opensphereai.com) ([docs](https://boyuerichdata.apifox.cn/)), open the **API令牌 (API tokens)** page and create a token in the `auto` group; the key starts with `sk-`.
+* `SERPER_API_KEY`: BFCL V4 web search only, from [serper.dev](https://serper.dev).
+
 ## 🗂️ Repository
 
 ```
@@ -97,50 +120,62 @@ Agent-Reflex/
 | --- | --- | --- |
 | [`RSD/`](RSD) | 557 MCP-anchored environments with tools, bad patterns and 1,170 reflection meta-skills | [README](RSD/README.md) |
 | [`LLaMA-Factory/`](LLaMA-Factory) | ReSFT on Qwen3-8B: full fine-tuning, ZeRO-3, 3 epochs, 5,127 steps | [README](LLaMA-Factory/README.md) · [reproduce](LLaMA-Factory/reproduce_skills.md) |
-| [`ORPO/`](ORPO) | ORPO from the ReSFT checkpoint: 1 × 8 GPUs, 200 updates | [README](ORPO/README.md) · [reproduce](ORPO/reproduce_skills.md) |
+| [`ORPO/`](ORPO) | ORPO from the ReSFT checkpoint on 1 × 8 GPUs | [README](ORPO/README.md) · [reproduce](ORPO/reproduce_skills.md) |
 | [`evaluation/`](evaluation) | one folder per benchmark, official settings, vLLM serving | [README](evaluation/README.md) · [reproduce](evaluation/reproduce_skills.md) |
+
+## 📦 Data
+
+| **Resource** | **Size** | **Download** | **Put it at** |
+| --- | --- | --- | --- |
+| Agent-Reflex-8B (Qwen3-8B, ReSFT + ORPO) | 16 GB | [🤗 HuggingFace](https://huggingface.co/dongguanting/Agent-Reflex-8B) | any path, pass as `MODEL_PATH` |
+| ReSFT data, 54,663 trajectories | 2.6 GB | [🤗 HuggingFace](https://huggingface.co/datasets/dongguanting/Agent-Reflex-SFT-54K) | `LLaMA-Factory/data/agent_reflex_resft/train/` |
+| ORPO tasks, 2,550 with skills | 152 MB | [🤗 HuggingFace](https://huggingface.co/datasets/dongguanting/Agent-Reflex-RL-2K) | `ORPO/data/` |
+| RSD skill library, 1,170 skills | 11 MB | this repo | [`RSD/environment_skills.jsonl`](RSD) |
+| Evaluation data | 115 MB | this repo | `evaluation/<Bench>/data/` |
+
+```bash
+pip install -U huggingface_hub
+hf download dongguanting/Agent-Reflex-SFT-54K --repo-type dataset --include "train/*" \
+  --local-dir LLaMA-Factory/data/agent_reflex_resft
+hf download dongguanting/Agent-Reflex-RL-2K train_envscaler_2550_with_skills.jsonl \
+  --repo-type dataset --local-dir ORPO/data
+hf download dongguanting/Agent-Reflex-8B --local-dir /path/to/Agent-Reflex-8B
+```
 
 ## 🚀 Quick Start
 
-Each part has its own environment, built with [uv](https://github.com/astral-sh/uv) (`pip install uv`). Download the training data first (see [Data](#-data)).
-
-**ReSFT**
+### 1. ReSFT
 
 ```bash
-cd LLaMA-Factory && bash setup_env.sh
+cd LLaMA-Factory
 NNODES=2 NODE_RANK=<0|1> MASTER_ADDR=<node0> MODEL_PATH=/path/to/Qwen3-8B \
   bash scripts/run_resft_qwen3_8b.sh
 ```
 
-**ORPO**
+### 2. ORPO
+
+Start from the ReSFT model checkpoint:
 
 ```bash
-cd ORPO && bash setup_env.sh
-python scripts/prepare_init_checkpoint.py /path/to/checkpoint-5127 --apply
-MODEL_PATH=/path/to/checkpoint-5127 bash scripts/run_orpo_qwen3_8b.sh
+cd ORPO
+python scripts/prepare_init_checkpoint.py /path/to/resft_checkpoint --apply
+MODEL_PATH=/path/to/resft_checkpoint bash scripts/run_orpo_qwen3_8b.sh
 ```
 
-**Evaluation** (full task sets, official settings; fill in `evaluation/.env` first, see [Dependencies](#-dependencies))
+### 3. Evaluation
+
+Full task sets under the official settings (fill in `evaluation/.env` first):
 
 ```bash
 cd evaluation
-bash shared/setup_vllm.sh
-for b in Tau2 BFCL-v4 ACEBench VitaBench AgentNoiseBench ToolSandbox; do bash $b/setup.sh; done
-MODEL_PATH=/path/to/checkpoint RUN_NAME=agent-reflex bash run_all.sh
+MODEL_PATH=/path/to/Agent-Reflex-8B RUN_NAME=agent-reflex bash run_all.sh
 ```
 
-## 📦 Data
-
-| Resource | Size | Where | Put it at |
-| --- | --- | --- | --- |
-| RSD skill library | 11 MB | this repo | `RSD/environment_skills.jsonl` |
-| ReSFT data (54,663 trajectories) | 2.6 GB | **Agent-Reflex-data** · *link coming soon* | `LLaMA-Factory/data/agent_reflex_resft/` |
-| ORPO training tasks (2,550, with skills) | 152 MB | **Agent-Reflex-data** · *link coming soon* | `ORPO/data/` |
-| Evaluation data | 115 MB | this repo | each `evaluation/<Bench>/data/` |
+`run_all.sh` serves the model with vLLM and runs all six benchmarks; set `BENCHES="Tau2 BFCL-v4"` to run a subset. Per-benchmark details are in [`evaluation/README.md`](evaluation/README.md).
 
 ## 🙏 Acknowledgements
 
-Agent-Reflex builds on [verl](https://github.com/volcengine/verl), [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory), [EnvScaler](https://github.com/RUC-NLPIR/EnvScaler), [Agent-World](https://github.com/RUC-NLPIR/Agent-World), [tau2-bench](https://github.com/sierra-research/tau2-bench), [BFCL](https://github.com/ShishirPatil/gorilla), [VitaBench](https://github.com/meituan-longcat/vitabench), [ToolSandbox](https://github.com/apple/ToolSandbox) and AgentNoiseBench. Thanks to their authors.
+Agent-Reflex builds on [verl](https://github.com/volcengine/verl), [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory), [EnvScaler](https://github.com/RUC-NLPIR/EnvScaler), [Agent-World](https://github.com/RUC-NLPIR/Agent-World), [tau2-bench](https://github.com/sierra-research/tau2-bench), [BFCL](https://github.com/ShishirPatil/gorilla), [VitaBench](https://github.com/meituan-longcat/vitabench), [ToolSandbox](https://github.com/apple/ToolSandbox) and [AgentNoiseBench](https://arxiv.org/abs/2602.11348). Thanks to their authors.
 
 ## 📄 License
 

@@ -36,7 +36,7 @@ ORPO/
 ├── requirements.txt
 ├── scripts/
 │   ├── train_orpo.sh             # full launcher; every knob is an env var
-│   ├── run_orpo_qwen3_8b.sh      # paper setting (200 updates, 1x8 GPUs)
+│   ├── run_orpo_qwen3_8b.sh      # paper setting (100 updates, 1x8 GPUs)
 │   ├── preflight.py              # checks model, data and prompt lengths before launch
 │   └── prepare_init_checkpoint.py# makes a transformers-5 ReSFT checkpoint loadable here
 ├── recipe/envscaler_openai_fc/
@@ -47,7 +47,7 @@ ORPO/
 │   ├── tool_execution.py, adapters/   # EnvScaler environment execution and reward
 │   └── data/                     # scripts that rebuilt the shipped data
 ├── data/
-│   ├── train_envscaler_2550_with_skills.jsonl   # 2,550 training tasks with attached skills
+│   ├── train_envscaler_2550_with_skills.jsonl   # 2,550 training tasks with attached skills (download below)
 │   ├── bfcl_val_128.jsonl                       # 128-task validation split
 │   └── environment_skills_envscaler.jsonl       # 51 environment-level RSD skills
 ├── verl/                         # verl 0.5 with the ORPO changes below
@@ -88,7 +88,7 @@ transformers 5.x, whose config layout transformers 4.54 (used here) silently
 misreads (the RoPE base falls back to 10000). Convert it once:
 
 ```bash
-python scripts/prepare_init_checkpoint.py /path/to/resft/checkpoint-5127 --apply
+python scripts/prepare_init_checkpoint.py /path/to/resft_checkpoint --apply
 ```
 
 The script only adds the legacy keys next to the new ones, so the checkpoint
@@ -98,8 +98,8 @@ unconverted checkpoint.
 ## Training
 
 ```bash
-# Paper setting: Qwen3-8B ReSFT checkpoint, one node with 8 GPUs, 200 updates.
-MODEL_PATH=/path/to/resft/checkpoint-5127 bash scripts/run_orpo_qwen3_8b.sh
+# Paper setting: Qwen3-8B ReSFT checkpoint, one node with 8 GPUs, 100 updates.
+MODEL_PATH=/path/to/resft_checkpoint bash scripts/run_orpo_qwen3_8b.sh
 
 # Resume an interrupted run.
 MODEL_PATH=... bash scripts/run_orpo_qwen3_8b.sh trainer.resume_mode=auto
@@ -124,7 +124,7 @@ Any Hydra override can be appended to the command line. Checkpoints go to
 | `MAX_ASSISTANT_TURNS` | 40 | turns per trajectory |
 | `ROLLOUT_TEMPERATURE` / `ROLLOUT_TOP_P` | 0.99 / 0.99 | sampling during training |
 | `TP_SIZE` / `GPU_MEMORY_UTILIZATION` | 4 / 0.45 | SGLang rollout engine |
-| `TOTAL_TRAINING_STEPS` / `SAVE_FREQ` / `TEST_FREQ` | 200 / 20 / 10 | schedule |
+| `TOTAL_TRAINING_STEPS` / `SAVE_FREQ` / `TEST_FREQ` | 100 / 20 / 10 | schedule |
 
 Useful metrics: `critic/score/mean` (training reward),
 `val-core/.../reward/mean@1` (BFCL validation), `actor/opd_loss`,
@@ -134,15 +134,23 @@ Useful metrics: `critic/score/mean` (training reward),
 
 ```bash
 python -m verl.model_merger merge --backend fsdp \
-  --local_dir checkpoints/orpo_qwen3_8b/global_step_200/actor \
-  --target_dir checkpoints/orpo_qwen3_8b/hf_step_200
+  --local_dir checkpoints/orpo_qwen3_8b/global_step_100/actor \
+  --target_dir checkpoints/orpo_qwen3_8b/hf_step_100
 ```
 
 The merged directory is what [`../evaluation`](../evaluation) serves.
 
 ## Data
 
-The shipped files are ready to train on. The scripts in
+The training tasks are on [🤗 Agent-Reflex-RL-2K](https://huggingface.co/datasets/dongguanting/Agent-Reflex-RL-2K);
+the validation split and skill catalog ship in `data/`:
+
+```bash
+hf download dongguanting/Agent-Reflex-RL-2K train_envscaler_2550_with_skills.jsonl \
+  --repo-type dataset --local-dir data
+```
+
+The scripts in
 `recipe/envscaler_openai_fc/data/` document how they were built:
 `build_envscaler_train.py` (EnvScaler tasks to OpenAI-FC prompts),
 `build_envscaler_skill_catalog.py` and `attach_environment_skills.py` (attach

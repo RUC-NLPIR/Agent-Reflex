@@ -11,12 +11,12 @@ description: Reproduce the Agent-Reflex ReSFT checkpoint (Qwen3-8B full SFT, 512
    transformers 5.8, DeepSpeed 0.19, flash-attn 2.7.4, Liger 0.8).
    If the flash-attn wheel cannot be downloaded, set `FLASH_ATTN_WHEEL` to a
    local copy.
-2. **Data**: already in `data/agent_reflex_resft/train/` (54,663 rows,
-   registered as `agent_reflex_resft` in `data/dataset_info.json`).
+2. **Data**: `hf download dongguanting/Agent-Reflex-SFT-54K --repo-type dataset --include "train/*" --local-dir data/agent_reflex_resft`
+   (54,663 rows, registered as `agent_reflex_resft` in `data/dataset_info.json`).
 3. **Paper run** (2 × 8 GPUs): on each node
    `NNODES=2 NODE_RANK=<0|1> MASTER_ADDR=<node0> MODEL_PATH=<Qwen3-8B> bash scripts/run_resft_qwen3_8b.sh`.
    It must report `Total optimization steps = 5,127`.
-4. Hand `saves/qwen3-8b-agent-reflex-resft/checkpoint-5127` to ORPO after
+4. Hand the trained model `saves/qwen3-8b-agent-reflex-resft` to ORPO after
    `../ORPO/scripts/prepare_init_checkpoint.py --apply`.
 
 ## Pitfalls

@@ -2,7 +2,7 @@
 # ORPO: noisy agentic RL (mixed clean / perturbed GRPO group) + reflection OPD.
 #
 # Every knob is an environment variable; the defaults reproduce the paper run
-# (Qwen3-8B, 8 GPUs, 200 updates). Extra Hydra overrides can be appended:
+# (Qwen3-8B, 8 GPUs, 100 updates). Extra Hydra overrides can be appended:
 #   bash scripts/train_orpo.sh trainer.resume_mode=auto
 set -euo pipefail
 
@@ -51,7 +51,7 @@ ADV_ESTIMATOR="${ADV_ESTIMATOR:-grpo}"
 ACTOR_LR="${ACTOR_LR:-1e-6}"
 KL_COEF="${KL_COEF:-0.01}"
 TOTAL_EPOCHS="${TOTAL_EPOCHS:-3}"
-TOTAL_TRAINING_STEPS="${TOTAL_TRAINING_STEPS:-200}"
+TOTAL_TRAINING_STEPS="${TOTAL_TRAINING_STEPS:-100}"
 SAVE_FREQ="${SAVE_FREQ:-20}"
 TEST_FREQ="${TEST_FREQ:-10}"
 VAL_BEFORE_TRAIN="${VAL_BEFORE_TRAIN:-True}"
