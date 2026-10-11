@@ -211,7 +211,17 @@ Agent-Reflex builds on [verl](https://github.com/volcengine/verl), [LLaMA-Factor
 
 ## 📄 License
 
-Agent-Reflex code and the RSD skill library are released under the [MIT License](LICENSE). Vendored components keep their own licenses: `ORPO/` (verl) and `LLaMA-Factory/` are Apache-2.0.
+Agent-Reflex code and the RSD skill library are released under the [MIT License](LICENSE). Vendored components keep their own licenses:
+
+| Component | License |
+| --- | --- |
+| `ORPO/` (verl), `LLaMA-Factory/` | Apache-2.0 |
+| `evaluation/BFCL-v4/` (BFCL data, from [gorilla](https://github.com/ShishirPatil/gorilla)) | Apache-2.0 |
+| `evaluation/Tau2/data/`, `evaluation/AgentNoiseBench/repo/tau2-bench-main/` ([tau2-bench](https://github.com/sierra-research/tau2-bench)) | MIT |
+| `evaluation/VitaBench/data/`, `evaluation/AgentNoiseBench/repo/vitabench/` ([VitaBench](https://github.com/meituan-longcat/vitabench)) | MIT |
+| `evaluation/ACEBench/interact_with_env/` ([EnvScaler](https://github.com/RUC-NLPIR/EnvScaler), [tau-bench](https://github.com/sierra-research/tau-bench)) | MIT |
+
+ToolSandbox is cloned from [apple/ToolSandbox](https://github.com/apple/ToolSandbox) at setup time and is not redistributed here. The AgentNoiseBench noise injection and data follow [AgentNoiseBench](https://arxiv.org/abs/2602.11348); please refer to its authors for terms of use.
 
 ## 📚 Citation
 
