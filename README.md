@@ -83,7 +83,7 @@ We evaluate on six agent benchmarks under each benchmark's official metric:
 * **Noisy Interaction:**
   * [AgentNoiseBench](https://arxiv.org/abs/2602.11348): tool-side and user-side perturbations injected into τ²-Bench and VitaBench environments.
 
-On Qwen3-8B, Agent-Reflex reaches **58.5** Overall on the five long-horizon tool-use benchmarks (+18.3 over the backbone, +7.6 over EnvScaler-8B) and **29.1** on AgentNoiseBench, the best among all 8B methods:
+On Qwen3-8B, Agent-Reflex reaches **58.6** Overall on the five long-horizon tool-use benchmarks (+18.4 over the backbone, +7.7 over EnvScaler-8B) and **29.1** on AgentNoiseBench, the best among all 8B methods:
 
 | Method | VitaBench | τ²-Bench | BFCL V4 | ACEBench | ToolSandbox | **Overall** | AgentNoiseBench |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -91,7 +91,7 @@ On Qwen3-8B, Agent-Reflex reaches **58.5** Overall on the five long-horizon tool
 | Reflexion | 6.8 | 34.5 | 42.7 | 64.0 | 75.4 | 44.7 | 13.7 |
 | EnvScaler-8B | 15.8 | 37.9 | 47.6 | 72.5 | 80.5 | 50.9 | 18.2 |
 | Agent-World-8B | 14.5 | 54.6 | 51.4 | 72.0 | 75.6 | 53.6 | – |
-| **Agent-Reflex** | **17.5** | **62.1** | **52.9** | **78.0** | **81.8** | **58.5** | **29.1** |
+| **Agent-Reflex** | **17.5** | **62.1** | **52.9** | **78.0** | **82.5** | **58.6** | **29.1** |
 
 <details>
 <summary><b>Full tables, noise robustness and the RL algorithm comparison</b></summary>
