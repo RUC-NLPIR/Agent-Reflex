@@ -53,7 +53,7 @@ https://github.com/user-attachments/assets/8c73de1c-7767-4e9d-823f-fa68a3a87620
 
 ### Stage 1 · Environment Reflection Skill Discovery (RSD)
 
-Build failure-aware executable environments by perturbing tool returns with real-world failure families, and mine verifier-matched success / failure pairs into an offline library of **1,170 reflection meta-skills**.
+Build failure-aware executable environments by perturbing tool returns with real-world failure families, and mine verifier-matched success / failure pairs into an offline library of **1,170 reflection meta-skills** over **557 environments**. Environment synthesis and the environment infrastructure follow [Agent-World](https://github.com/RUC-NLPIR/Agent-World).
 
 <p align="center"><img src="assets/stage1_rsd.png" width="100%"></p>
 
@@ -83,14 +83,15 @@ We evaluate on six agent benchmarks under each benchmark's official metric:
 * **Noisy Interaction:**
   * [AgentNoiseBench](https://arxiv.org/abs/2602.11348): tool-side and user-side perturbations injected into τ²-Bench and VitaBench environments.
 
-On Qwen3-8B, Agent-Reflex reaches **55.8** Overall on the five long-horizon tool-use benchmarks (+15.6 over the backbone, +7.4 over EnvScaler-8B) and leads every 8B method on AgentNoiseBench:
+On Qwen3-8B, Agent-Reflex reaches **58.5** Overall on the five long-horizon tool-use benchmarks (+18.3 over the backbone, +7.6 over EnvScaler-8B) and **29.1** on AgentNoiseBench, the best among all 8B methods:
 
 | Method | VitaBench | τ²-Bench | BFCL V4 | ACEBench | ToolSandbox | **Overall** | AgentNoiseBench |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | Qwen3-8B | 11.4 | 26.2 | 40.4 | 54.0 | 69.1 | 40.2 | 12.3 |
 | Reflexion | 6.8 | 34.5 | 42.7 | 64.0 | 75.4 | 44.7 | 13.7 |
-| EnvScaler-8B | 15.8 | 37.9 | 47.6 | 60.0 | 80.5 | 48.4 | 17.6 |
-| **Agent-Reflex** | **17.5** | **54.9** | **48.9** | **76.0** | **81.8** | **55.8** | **21.4** |
+| EnvScaler-8B | 15.8 | 37.9 | 47.6 | 72.5 | 80.5 | 50.9 | 18.2 |
+| Agent-World-8B | 14.5 | 54.6 | 51.4 | 72.0 | 75.6 | 53.6 | – |
+| **Agent-Reflex** | **17.5** | **62.1** | **52.9** | **78.0** | **81.8** | **58.5** | **29.1** |
 
 <details>
 <summary><b>Full tables, noise robustness and the RL algorithm comparison</b></summary>
@@ -131,6 +132,9 @@ SERPER_API_KEY=xxxxxxxx
 ```
 
 * `BOYUE_API_KEY`: the user simulator (`gpt-4.1`) and judge (`claude-sonnet-4-6`) for every benchmark except BFCL. Register at [Boyue API](https://api.boyuerichdata.opensphereai.com) ([docs](https://boyuerichdata.apifox.cn/)), open the **API令牌 (API tokens)** page and create a token in the `auto` group; the key starts with `sk-`.
+
+> [!NOTE]
+> By default our evaluation calls these models through Boyue, a third-party OpenAI-compatible API service. Any OpenAI-compatible endpoint works: to use the official OpenAI / Anthropic APIs or your own gateway, point the base URL and key in `evaluation/.env` (and the client setup in each benchmark's `run.sh` / config) to your provider. A coding agent can make this change in a few minutes.
 * `SERPER_API_KEY`: BFCL V4 web search only, from [serper.dev](https://serper.dev).
 
 ## 🗂️ Repository
@@ -146,7 +150,7 @@ Agent-Reflex/
 
 | Folder | What you get | Start here |
 | --- | --- | --- |
-| [`RSD/`](RSD) | 557 MCP-anchored environments with tools, bad patterns and 1,170 reflection meta-skills | [README](RSD/README.md) |
+| [`RSD/`](RSD) | 557 MCP-anchored environments with tools, bad patterns and 1,170 reflection meta-skills, in English and Chinese | [README](RSD/README.md) |
 | [`LLaMA-Factory/`](LLaMA-Factory) | ReSFT on Qwen3-8B: full fine-tuning, ZeRO-3, 3 epochs, 5,127 steps | [README](LLaMA-Factory/README.md) · [reproduce](LLaMA-Factory/reproduce_skills.md) |
 | [`ORPO/`](ORPO) | ORPO from the ReSFT checkpoint on 1 × 8 GPUs | [README](ORPO/README.md) · [reproduce](ORPO/reproduce_skills.md) |
 | [`evaluation/`](evaluation) | one folder per benchmark, official settings, vLLM serving | [README](evaluation/README.md) · [reproduce](evaluation/reproduce_skills.md) |
@@ -158,7 +162,7 @@ Agent-Reflex/
 | Agent-Reflex-8B (Qwen3-8B, ReSFT + ORPO) | 16 GB | [🤗 HuggingFace](https://huggingface.co/dongguanting/Agent-Reflex-8B) | any path, pass as `MODEL_PATH` |
 | ReSFT data, 54,663 trajectories | 2.6 GB | [🤗 HuggingFace](https://huggingface.co/datasets/dongguanting/Agent-Reflex-SFT-54K) | `LLaMA-Factory/data/agent_reflex_resft/train/` |
 | ORPO tasks, 2,550 with skills | 152 MB | [🤗 HuggingFace](https://huggingface.co/datasets/dongguanting/Agent-Reflex-RL-2K) | `ORPO/data/` |
-| RSD skill library, 1,170 skills | 11 MB | this repo | [`RSD/environment_skills.jsonl`](RSD) |
+| RSD skill library, 1,170 skills (English / Chinese) | 22 MB | this repo | [`RSD/environment_skills.jsonl`](RSD) · [`RSD/environment_skills_zh.jsonl`](RSD) |
 | Evaluation data | 115 MB | this repo | `evaluation/<Bench>/data/` |
 
 ```bash
@@ -212,9 +216,10 @@ Agent-Reflex code and the RSD skill library are released under the [MIT License]
 ## 📚 Citation
 
 ```bibtex
-@article{agentreflex2026,
+@article{dong2026agentreflex,
   title  = {Agent-Reflex: Teaching Language Agents to Act Reflectively},
-  author = {Anonymous},
+  author = {Dong, Guanting and Yang, Xinyu and Jin, Jiajie and Hu, Yuyang and Song, Xiaoshuai and Chen, Yifei and Li, Xiaoxi and Tan, Jiejun and Zhu, Yutao and Chua, Tat-Seng and Wen, Ji-Rong and Dou, Zhicheng},
+  journal = {arXiv preprint},
   year   = {2026}
 }
 ```

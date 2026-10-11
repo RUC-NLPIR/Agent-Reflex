@@ -6,7 +6,8 @@ server specification from [Smithery](https://smithery.ai/). Its tool returns
 are perturbed with failure families mined from real tool errors. Rollouts
 from a diverse LLM pool are then paired into success / failure contrasts, and
 an analyzer turns each contrast into a *bad pattern* (what went wrong) and
-the *reflection meta-skills* that repair it.
+the *reflection meta-skills* that repair it. Environment synthesis and the
+environment infrastructure follow [Agent-World](https://github.com/RUC-NLPIR/Agent-World).
 
 | | |
 | --- | --- |
@@ -14,7 +15,7 @@ the *reflection meta-skills* that repair it.
 | Tools | 8,856 (median 11 per environment) |
 | Reflection meta-skills | **1,170** (2.2 per environment on average) |
 | Bad patterns | 962 |
-| Language | 578 skills in Chinese, 592 in English, kept as mined |
+| Language | English (`environment_skills.jsonl`) and Chinese (`environment_skills_zh.jsonl`) |
 
 The library is the skill source for [ReSFT](../LLaMA-Factory) data
 synthesis. [ORPO](../ORPO) puts environment skills in context during
@@ -25,20 +26,30 @@ same schema and ship in `ORPO/data/environment_skills_envscaler.jsonl`.
 
 `0146000` · **Logseq Tools** (21 tools: `getAllPages`, `getPage`, `searchPages`, `getBacklinks`, ...)
 
-**Bad pattern.** 把 getAllPages 的搜索结果摘要当成最终事实，未继续读取详情或分页，可能遗漏匹配项并据此给出错误结论。
-*(Treats the summary returned by `getAllPages` as the final answer without
-reading details or further pages, so matches are missed and the conclusion
-is wrong.)*
+**Bad pattern.** Treats the search result summary from `getAllPages` as final fact without reading details or further pages, potentially missing matches and drawing wrong conclusions from it.
 
 **Reflection meta-skills.**
 
-1. 需要查找信息时先限定查询条件并执行 getAllPages *(narrow the query, then call `getAllPages`)*
-2. 随后读取详情、分页或统计结果，核对对象 ID、时间和状态 *(read details, pages or counts, and check IDs, timestamps and status)*
-3. 避免把搜索命中数或摘要当作完整结果。 *(do not take a hit count or summary as the full result)*
+1. When looking up information, first narrow the query conditions and run `getAllPages`.
+2. Then read the details, paginated results, or statistics, and check object IDs, timestamps, and statuses.
+3. Do not treat search hit counts or summaries as complete results.
+
+<details>
+<summary>中文版本</summary>
+
+**Bad pattern.** 把 getAllPages 的搜索结果摘要当成最终事实，未继续读取详情或分页，可能遗漏匹配项并据此给出错误结论。
+
+**Reflection meta-skills.**
+
+1. 需要查找信息时先限定查询条件并执行 getAllPages
+2. 随后读取详情、分页或统计结果，核对对象 ID、时间和状态
+3. 避免把搜索命中数或摘要当作完整结果。
+
+</details>
 
 ## File format
 
-`environment_skills.jsonl` has one environment per line:
+`environment_skills.jsonl` (English) and `environment_skills_zh.jsonl` (Chinese) share the same environments, order and schema; `bad_patterns` and `skills` are provided in each language, and tool schemas are kept as is. One environment per line:
 
 | Field | Type | Meaning |
 | --- | --- | --- |

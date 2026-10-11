@@ -30,6 +30,7 @@ description: Reproduce Agent-Reflex ORPO (noisy agentic RL + reflection OPD) on 
   `MAX_PROMPT_LENGTH` (8192) is a data bug, not something to truncate.
 - `OPD_LOSS_COEF=0` gives the noisy-RL-only ablation;
   `NOISE_ROLLOUT_FRACTION=0` gives the OPD-only ablation; both 0 is GRPO.
-- Validation (`TEST_FREQ`) runs the 128 BFCL tasks greedily (temperature 0,
-  one sample) and reports `val-core/.../reward/mean@1`.
+- Validation (`TEST_FREQ`) follows the EnvScaler RL code: it runs the 128
+  BFCL multi-turn tasks greedily (temperature 0, one sample) and reports
+  `val-core/.../reward/mean@1`.
 - Resume with `trainer.resume_mode=auto` and the same `EXP_NAME`.

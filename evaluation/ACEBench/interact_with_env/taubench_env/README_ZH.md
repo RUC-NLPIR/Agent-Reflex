@@ -420,7 +420,7 @@ TauBench 的核心不是看工具调用序列是否逐字一致，而是看 **�
 
 | 参数 | 默认值 |
 | --- | --- |
-| `MODEL_PATH` | `/fs/archive/share/u2024001049/train_models/EnvScaler/EnvScaler-Qwen3-8B` |
+| `MODEL_PATH` | `/path/to/EnvScaler-Qwen3-8B` |
 | `MODEL_NAME` | `EnvScaler-Qwen3-8B` |
 | `PORTS` | `8000` |
 | `GPU_IDS` | `0` |
@@ -430,7 +430,7 @@ TauBench 的核心不是看工具调用序列是否逐字一致，而是看 **�
 启动：
 
 ```bash
-cd /fs/archive/share/u2024001049/EnvScaler-main/interact_with_env/vllm_serve
+cd /path/to/EnvScaler-main/interact_with_env/vllm_serve
 bash vllm_serve_taubench.sh
 ```
 
@@ -489,7 +489,7 @@ ENABLE_TOOL_CALLING=false bash vllm_serve_taubench.sh
 所有命令都建议从 `interact_with_env` 目录运行：
 
 ```bash
-cd /fs/archive/share/u2024001049/EnvScaler-main/interact_with_env
+cd /path/to/EnvScaler-main/interact_with_env
 ```
 
 先设置环境变量。TauBench 模拟用户只读取 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`：

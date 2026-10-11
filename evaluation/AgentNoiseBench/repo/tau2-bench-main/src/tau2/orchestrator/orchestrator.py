@@ -104,7 +104,6 @@ class Orchestrator:
         self.prompt_optimization_count = 0
         self.max_prompt_optimizations = 66
         self.pre_tool_call_state = {}
-        # self.file_path = '/NAS/ruip/tau2-bench-main/src/tau2/noise/log_sys_prompt.txt'
         self.complish = False
         # 自动化迭代prompt
         # self.current_sysprompt = en_add_redundant_airline

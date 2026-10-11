@@ -45,7 +45,7 @@ ORPO/
 │   ├── skill_context.py          # inserts an RSD skill into the system prompt
 │   ├── skill_rescoring.py        # builds the skill-conditioned teacher batch
 │   ├── tool_execution.py, adapters/   # EnvScaler environment execution and reward
-│   └── data/                     # scripts that rebuilt the shipped data
+│   └── data/                     # data builders and schema checks
 ├── data/
 │   ├── train_envscaler_2550_with_skills.jsonl   # 2,550 training tasks with attached skills (download below)
 │   ├── bfcl_val_128.jsonl                       # 128-task validation split
@@ -150,12 +150,15 @@ hf download dongguanting/Agent-Reflex-RL-2K train_envscaler_2550_with_skills.jso
   --repo-type dataset --local-dir data
 ```
 
-The scripts in
-`recipe/envscaler_openai_fc/data/` document how they were built:
-`build_envscaler_train.py` (EnvScaler tasks to OpenAI-FC prompts),
-`build_envscaler_skill_catalog.py` and `attach_environment_skills.py` (attach
-the RSD skill of each environment), `build_bfcl_val.py` (validation split) and
+Each training task already carries the RSD skill of its environment
+(`extra_info.rsd_skill`), and `data/environment_skills_envscaler.jsonl` lists the
+51 environment-level skills used by these tasks. Helper scripts in
+`recipe/envscaler_openai_fc/data/`: `build_envscaler_train.py` (EnvScaler tasks
+to OpenAI-FC prompts), `build_bfcl_val.py` (validation split) and
 `validate_data.py` (schema check).
+
+Following the [EnvScaler](https://github.com/RUC-NLPIR/EnvScaler) RL code,
+validation during training runs 128 BFCL multi-turn tasks (`data/bfcl_val_128.jsonl`).
 
 ## Tests
 

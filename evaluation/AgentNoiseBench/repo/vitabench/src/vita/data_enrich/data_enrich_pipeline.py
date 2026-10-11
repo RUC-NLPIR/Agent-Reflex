@@ -1,4 +1,4 @@
-# 读取文件/NAS/ruip/vitabench/data/vita/domains/delivery/tasks.json，里面的文件格式是：
+# 读取文件 data/vita/domains/delivery/tasks.json，里面的文件格式是：
 # {
 #         "id": "10711001",
 #         "domain": "delivery",
