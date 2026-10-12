@@ -1,0 +1,27 @@
+Built-in image_gen was used for the six-pose mascot sheet.
+Reference: assets/motivation_problem.png (the paper's Figure 1 robot).
+
+GENERATION PROMPT
+Use case: stylized-concept.
+Asset type: animation sprite sheet for the Agent-Reflex research README.
+Reference image: the attached paper figure is a STRICT CHARACTER AND RENDERING STYLE reference. Use the cute three-dimensional white-and-blue robot with a black glossy faceplate, cyan luminous expressive eyes, rounded blue ear disks, short blue ball antenna, articulated white body with cobalt joint accents, seated behind its graphite-gray laptop. Match that particular paper robot, its proportions, materials and lively expression. Do not use the diagram's human character or any of its text.
+Primary request: draw ONE clean character sheet containing SIX poses of THIS SAME robot in a precise three-column, two-row grid. Each cell is equal size; the robot and its laptop have identical scale, camera, baseline, perspective and lighting across all cells. Large, high-resolution landscape sheet, 1536 by 1024 if possible. Every character stays well inside its own cell with generous transparent margin; poses must never touch or cross cell boundaries.
+Read order left to right, top row then bottom row:
+1. IDLE: friendly and focused robot behind laptop, wide open cyan eyes, slight smile, both hands near keyboard.
+2. ERROR: robot startled by a tool failure, raised eyebrows visible as cyan eye shapes, one small cyan sweat bead, shoulders raised, hands lifted just above keyboard, not crying uncontrollably.
+3. REFLECT: robot thoughtfully tilts its head slightly, one hand on chin, cyan eyes glancing up, other hand near laptop.
+4. REPLAN: robot confidently typing, leaning forward, lively attentive cyan eyes, same laptop.
+5. VERIFY: robot looks carefully at laptop screen with focused narrow cyan eyes, one hand pointing at screen, still the same full silhouette and laptop.
+6. RECOVERED: joyful robot with smiling curved cyan eyes, one hand gives a thumbs-up, other hand at keyboard, same laptop.
+Style/medium: polished 3D rendered scientific-paper mascot, tactile glossy ceramic-white shell, believable cobalt-blue joints, gentle studio shading, physically modeled form, clean anti-aliased cutout. Friendly and lively, closely matching the paper reference; not a flat vector logo, not pixel art, not photoreal humanoid.
+Palette: paper's white, cobalt and deep navy, cyan eye glow; restrained purple only if needed as a tiny accent.
+Scene/backdrop: truly transparent alpha background for the ENTIRE sheet, transparent gutters, no checkerboard painted into pixels, no white or colored backdrop, no floor. Subtle close contact shading on robot/laptop is allowed but no large cast floor shadows.
+Constraints: no lettering, no labels, no grids, no text on laptop, no watermark, no additional characters, no icons floating outside the six silhouettes. Character identity, camera and laptop geometry must remain consistent across all six poses. Include the whole robot and whole laptop in every cell.
+
+BACKGROUND EXTRACTION PROMPT
+Use case: background-extraction.
+Edit target: the supplied six-pose robot sheet.
+Primary request: remove every part of the smoky blue-gray background, all atmosphere, halos, background lighting and floor shadows from this sprite sheet. Return ONLY the six robots and their laptops as clean cutouts on a genuine fully transparent alpha background.
+Invariants: preserve the exact 1536x1024 three-column two-row arrangement and all six original robot poses, pixel geometry, character identity, expressions, robot white and blue materials and laptop colors. Do not redraw the characters. Do not shift, resize, crop or change any pose. Keep internal shading of robot and laptop. Remove only the backdrop.
+The transparent gutters and every area outside the six physical robot/laptop silhouettes must be fully alpha=0. No haze and no blue glow extending into the background. Transparent means actual alpha, not a black or white matte and not a checkerboard. No text, labels, borders or added objects.
+

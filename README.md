@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/cover.gif" alt="Agent-Reflex" width="100%">
+<img src="assets/cover.gif" alt="Agent-Reflex learns to observe, reflect, and recover from tool failures and user corrections through RSD, ReSFT, and ORPO training." width="100%">
 
 <h1><img src="assets/logo.png" alt="" width="44" align="absmiddle">&nbsp;Agent-Reflex: Teaching Language Agents to Act Reflectively</h1>
 
