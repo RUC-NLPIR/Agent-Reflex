@@ -67,7 +67,7 @@ Convert each skill into verifier-validated **self-reflection (SR)**, **skill rec
 
 Combine Noisy Agent RL with same-token, skill-guided on-policy distillation (OPD) to provide dense reflection supervision. Skills are used only in training; the deployed agent is skill-free.
 
-<p align="center"><img src="assets/stage3_orpo.png" width="100%"></p>
+<p align="center"><img src="assets/Figure3_new.png" width="100%"></p>
 
 ## 📊 Benchmarks & Results
 
