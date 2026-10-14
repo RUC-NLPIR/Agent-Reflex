@@ -30,9 +30,9 @@
 
 ### Agent-Reflex in One Minute
 
-[![Agent-Reflex: a one-minute overview of reflective language agents](assets/demo/agent-reflex-overview.png)](https://github.com/RUC-NLPIR/Agent-Reflex/raw/refs/heads/main/assets/demo/agent-reflex-overview.mp4)
+https://github.com/user-attachments/assets/281af1d3-843e-4496-b232-58fee951cefd
 
-<p align="center"><sub>🎥 <a href="https://github.com/RUC-NLPIR/Agent-Reflex/raw/refs/heads/main/assets/demo/agent-reflex-overview.mp4">Watch / download the 1080p video (60 seconds)</a> · 💻 <a href="assets/demo/index.html">original task interactive replay</a> (open locally in a browser)</sub></p>
+<p align="center"><sub>🎥 <a href="https://github.com/RUC-NLPIR/Agent-Reflex/raw/refs/heads/main/assets/demo/agent-reflex-overview.mp4">Download the 1080p video (60 seconds)</a> · 💻 <a href="assets/demo/index.html">original task interactive replay</a> (open locally in a browser)</sub></p>
 
 ## 💡 Overview
 
