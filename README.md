@@ -28,11 +28,11 @@
 
 ## 🎬 Demo
 
-### User-Centric Reflection on a Noisy MCP Task
+### Agent-Reflex in One Minute
 
-https://github.com/user-attachments/assets/8c73de1c-7767-4e9d-823f-fa68a3a87620
+[![Agent-Reflex: a one-minute overview of reflective language agents](assets/demo/agent-reflex-overview.png)](https://github.com/RUC-NLPIR/Agent-Reflex/raw/refs/heads/main/assets/demo/agent-reflex-overview.mp4)
 
-<p align="center"><sub>🎥 <a href="assets/demo/demo.mp4">Download the 1080p video</a> · 💻 <a href="assets/demo/index.html">interactive replay</a> (open locally in a browser)</sub></p>
+<p align="center"><sub>🎥 <a href="https://github.com/RUC-NLPIR/Agent-Reflex/raw/refs/heads/main/assets/demo/agent-reflex-overview.mp4">Watch / download the 1080p video (60 seconds)</a> · 💻 <a href="assets/demo/index.html">original task interactive replay</a> (open locally in a browser)</sub></p>
 
 ## 💡 Overview
 
