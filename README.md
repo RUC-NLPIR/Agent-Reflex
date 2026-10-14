@@ -6,7 +6,7 @@
 
 ##### If you like our project, please give us a star ⭐ on GitHub for the latest update.
 
-[![Paper](https://img.shields.io/badge/Paper-arXiv-b5212f.svg?logo=arxiv)](https://arxiv.org/abs/XXXX.XXXXX)
+[![Paper](https://img.shields.io/badge/Paper-arXiv-b5212f.svg?logo=arxiv)](https://arxiv.org/abs/2610.17953)
 [![Model](https://img.shields.io/badge/🤗%20Model-Agent--Reflex--8B-ffc107.svg)](https://huggingface.co/dongguanting/Agent-Reflex-8B)
 [![SFT Data](https://img.shields.io/badge/🤗%20SFT%20Data-54K-ffc107.svg)](https://huggingface.co/datasets/dongguanting/Agent-Reflex-SFT-54K)
 [![RL Data](https://img.shields.io/badge/🤗%20RL%20Data-2K-ffc107.svg)](https://huggingface.co/datasets/dongguanting/Agent-Reflex-RL-2K)
@@ -24,7 +24,7 @@
 * **[2026-10]** 🤗 The **ReSFT data (54,663 trajectories)** and **ORPO tasks (2,550 with skills)** are now available on Hugging Face: [SFT-54K](https://huggingface.co/datasets/dongguanting/Agent-Reflex-SFT-54K) · [RL-2K](https://huggingface.co/datasets/dongguanting/Agent-Reflex-RL-2K).
 * **[2026-10]** 🤗 The **[Agent-Reflex-8B](https://huggingface.co/dongguanting/Agent-Reflex-8B)** checkpoint (Qwen3-8B, ReSFT + ORPO) is released.
 * **[2026-10]** 🚀 Full codebase released: the RSD skill library (1,170 meta-skills), ReSFT and ORPO training recipes, and evaluation on six benchmarks.
-* **[2026-10]** 📄 Our paper **Agent-Reflex: Teaching Language Agents to Act Reflectively** is now available on [arXiv](https://arxiv.org/abs/XXXX.XXXXX).
+* **[2026-10]** 📄 Our paper **Agent-Reflex: Teaching Language Agents to Act Reflectively** is now available on [arXiv](https://arxiv.org/abs/2610.17953).
 
 ## 🎬 Demo
 
@@ -229,7 +229,8 @@ ToolSandbox is cloned from [apple/ToolSandbox](https://github.com/apple/ToolSand
 @article{dong2026agentreflex,
   title  = {Agent-Reflex: Teaching Language Agents to Act Reflectively},
   author = {Dong, Guanting and Yang, Xinyu and Jin, Jiajie and Hu, Yuyang and Song, Xiaoshuai and Chen, Yifei and Li, Xiaoxi and Tan, Jiejun and Zhu, Yutao and Chua, Tat-Seng and Wen, Ji-Rong and Dou, Zhicheng},
-  journal = {arXiv preprint},
-  year   = {2026}
+  journal = {arXiv preprint arXiv:2610.17953},
+  year   = {2026},
+  url    = {https://arxiv.org/abs/2610.17953}
 }
 ```
