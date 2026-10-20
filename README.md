@@ -237,4 +237,25 @@ ToolSandbox is cloned from [apple/ToolSandbox](https://github.com/apple/ToolSand
   primaryClass={cs.CL},
   url={https://arxiv.org/abs/2610.17953},
 }
+
+@article{song2026envscaler,
+  title={EnvScaler: Scaling Tool-Interactive Environments for LLM Agent via Programmatic Synthesis},
+  author={Song, Xiaoshuai and Chang, Haofei and Dong, Guanting and Zhu, Yutao and Dou, Zhicheng and Wen, Ji-Rong},
+  journal={arXiv preprint arXiv:2601.05808},
+  year={2026}
+}
+
+@article{dong2026agent,
+  title   = {Agent-World: Scaling Real-World Environment Synthesis for Evolving General Agent Intelligence},
+  author  = {Dong, Guanting and Lu, Junting and Huang, Junjie and Zhong, Wanjun and
+             Liu, Longxiang and Huang, Shijue and Li, Zhenyu and Zhao, Yang and
+             Song, Xiaoshuai and Li, Xiaoxi and Jin, Jiajie and Zhu, Yutao and
+             Wang, Hanbin and Lei, Fangyu and Luo, Qinyu and Chen, Mingyang and
+             Chen, Zehui and Feng, Jiazhan and Wen, Ji-Rong and Dou, Zhicheng},
+  journal = {CoRR},
+  volume  = {abs/2604.18292},
+  year    = {2026},
+  url     = {https://arxiv.org/abs/2604.18292}
+}
+
 ```
